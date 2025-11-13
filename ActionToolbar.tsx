@@ -24,11 +24,13 @@ import {formatCopyToClipboard, generateSrt} from './utils';
 interface ActionToolbarProps {
   timecodes: TextTimecode[];
   videoDuration: number;
+  activeMode: string | undefined;
 }
 
 export default function ActionToolbar({
   timecodes,
   videoDuration,
+  activeMode,
 }: ActionToolbarProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [copyStatus, setCopyStatus] = useState('Copy');
@@ -55,12 +57,22 @@ export default function ActionToolbar({
   }, [copyStatus]);
 
   const handleDownloadSrt = () => {
+    // Sanitize the active mode name to create a user-friendly, valid filename.
+    // Defaults to 'captions' if the mode is not set.
+    const baseName = activeMode
+      ? activeMode
+          .toLowerCase()
+          .replace(/\s+/g, '-') // Replace spaces with hyphens
+          .replace(/[^a-z0-9-]/g, '') // Remove non-alphanumeric characters
+      : 'captions';
+    const filename = `${baseName}.srt`;
+
     const srtContent = generateSrt(timecodes, videoDuration);
     const blob = new Blob([srtContent], {type: 'text/plain'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'captions.srt';
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

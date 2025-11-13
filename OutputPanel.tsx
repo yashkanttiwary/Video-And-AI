@@ -66,12 +66,12 @@ export default function OutputPanel({
   const textBasedTimecodes =
     timecodeList?.filter((item): item is TextTimecode => 'text' in item) || [];
 
+  // Show the action toolbar for any mode that produces text-based timecodes,
+  // as long as it's not the special Table or Chart view.
   const showActionToolbar =
-    activeMode &&
-    ['A/V captions', 'Simple Captions', 'Paragraph', 'Key moments', 'Haiku'].includes(
-      activeMode,
-    ) &&
-    textBasedTimecodes.length > 0;
+    textBasedTimecodes.length > 0 &&
+    activeMode !== 'Table' &&
+    activeMode !== 'Chart';
 
   const renderContent = () => {
     if (isLoading) {
@@ -173,6 +173,7 @@ export default function OutputPanel({
           <ActionToolbar
             timecodes={textBasedTimecodes}
             videoDuration={videoDuration}
+            activeMode={activeMode}
           />
         )}
         {renderContent()}

@@ -6,6 +6,7 @@
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 
 //     https://www.apache.org/licenses/LICENSE-2.0
@@ -31,18 +32,17 @@ const modes: Record<string, Mode> = {
       'Generate detailed, time-stamped captions for every scene, including dialogue and visual descriptions.',
     prompt: `You are an expert video analyst. Your task is to generate precise, structured captions for the provided video.
 
-**Instructions:**
-1.  **Break the video down into short, time-stamped segments.** A new segment should begin every **5-10 seconds**, or whenever a significant visual change or new line of dialogue occurs.
-2.  For each segment, identify the exact start timecode (in HH:MM:SS format).
-3.  For each segment, write a concise description of the visuals and transcribe any spoken dialogue verbatim.
-4.  Combine the description and dialogue into a single 'text' string for each timecode.
-5.  Call the 'set_timecodes' function **once** with a single array containing all the generated timecode objects.
+**CRITICAL INSTRUCTIONS:**
+1.  **GRANULARITY REQUIREMENT:** You MUST break the video down into very short, time-stamped segments. A new caption entry MUST be created every 5-10 seconds, WITHOUT FAIL. Also create a new entry for any significant visual change or new line of dialogue, even if it is less than 5 seconds. DO NOT group long periods of time into a single entry. This is a strict requirement.
+2.  **CONTENT:** For each segment, provide a concise description of the visuals AND transcribe any spoken dialogue verbatim.
+3.  **FUNCTION CALL:** Call the 'set_timecodes' function **only once** with a single array containing all the generated timecode objects.
 
-**Example of the expected output array:**
+**Example of the required granular output:**
 [
-  { time: "00:00:02", text: "A car drives down a sunny suburban street." },
-  { time: "00:00:07", text: "The car pulls into a driveway. Dialogue: \\"We're home.\\"" },
-  { time: "00:00:11", text: "A person gets out of the car and walks towards the house." }
+  { "time": "00:00:02", "text": "A shot of a sunlit kitchen counter." },
+  { "time": "00:00:06", "text": "A person's hands are chopping vegetables." },
+  { "time": "00:00:10", "text": "Dialogue: 'Is everything ready for dinner?'" },
+  { "time": "00:00:14", "text": "Another person walks into the frame. Dialogue: 'Almost!'" }
 ]`,
     isList: true,
   },
@@ -53,18 +53,17 @@ const modes: Record<string, Mode> = {
       'Get a simple, time-stamped transcript of all spoken dialogue in the original language.',
     prompt: `You are a transcription specialist. Your task is to accurately transcribe all spoken dialogue from the provided media file.
 
-**Instructions:**
-1.  **Break the transcription into short, easy-to-read lines.** A new caption line should be created for every sentence or natural pause in speech. Do not group multiple sentences into one timestamp.
-2.  Identify the start timecode (in HH:MM:SS format) for each line.
-3.  Transcribe the speech verbatim. Do not translate or add descriptions.
-4.  If speech is unclear, use "[inaudible]".
-5.  Call the 'set_timecodes' function **once** with a single array of all the transcription objects.
+**CRITICAL INSTRUCTIONS:**
+1.  **GRANULARITY REQUIREMENT:** You MUST break the transcription into short, easy-to-read lines. A new caption MUST be created for each individual sentence. If a sentence is long, you MUST break it at a natural pause (like a comma or a breath). DO NOT group multiple sentences under a single timestamp. This is a strict requirement.
+2.  **ACCURACY:** Transcribe the speech verbatim. Do not add descriptions. If speech is unclear, use "[inaudible]".
+3.  **FUNCTION CALL:** Call the 'set_timecodes' function **only once** with a single array of all the transcription objects.
 
-**Example of the expected output array:**
+**Example of the required granular output:**
 [
-  { time: "00:02:10", text: "This is the first sentence that was spoken." },
-  { time: "00:02:13", text: "And this is the very next one." },
-  { time: "00:02:16", text: "It's important to keep them separate." }
+  { "time": "00:02:10", "text": "This is the first sentence that was spoken." },
+  { "time": "00:02:13", "text": "And this is the very next one," },
+  { "time": "00:02:15", "text": "even if it's part of the same thought." },
+  { "time": "00:02:18", "text": "It's important to keep them separate." }
 ]`,
     isList: true,
   },
