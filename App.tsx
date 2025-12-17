@@ -24,51 +24,52 @@ import {
   useRef,
   useState,
 } from 'react';
-import type {File as UploadedFile} from '@google/genai/server';
 import {generateContent, uploadFile} from './api';
 import modes from './modes';
 import OutputPanel from './OutputPanel';
 import Sidebar from './Sidebar';
 import type {Timecode} from './types';
 import VideoPlayer from './VideoPlayer';
+import {AppProvider, useAppContext} from './context';
 
 const chartModes = Object.keys(modes.Chart.subModes!);
 
-export default function App() {
-  const [vidUrl, setVidUrl] = useState<string | null>(null);
-  const [videoDuration, setVideoDuration] = useState(0);
-  const [file, setFile] = useState<UploadedFile | null>(null);
-  const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(null);
-  const [timecodeList, setTimecodeList] = useState<Timecode[] | null>(null);
-  const [textResponse, setTextResponse] = useState<string | null>(null);
-  const [requestedTimecode, setRequestedTimecode] = useState<number | null>(
-    null,
-  );
-  const [selectedMode, setSelectedMode] = useState<string>(Object.keys(modes)[0]);
-  const [activeMode, setActiveMode] = useState<string>();
-  const [isLoading, setIsLoading] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(true);
-  const [isLoadingVideo, setIsLoadingVideo] = useState(false);
-  const [videoError, setVideoError] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<number>(0);
-  const [uploadStatus, setUploadStatus] = useState<string>('');
-  const [apiError, setApiError] = useState<string | null>(null);
-  const [customPrompt, setCustomPrompt] = useState('');
-  const [chartMode, setChartMode] = useState<string>(chartModes[0]);
-  const [chartPrompt, setChartPrompt] = useState('');
-  const [chartLabel, setChartLabel] = useState('');
+function AppContent() {
+  const {
+    vidUrl, setVidUrl,
+    setVideoDuration,
+    file, setFile,
+    mediaType, setMediaType,
+    setTimecodeList,
+    setTextResponse,
+    setActiveMode,
+    setIsLoading,
+    showSidebar, setShowSidebar,
+    isLoadingVideo, setIsLoadingVideo,
+    setVideoError,
+    setUploadProgress,
+    setUploadStatus,
+    setApiError,
+    isCustomMode, isChartMode, isCustomChartMode,
+    selectedMode, chartMode, chartPrompt, customPrompt,
+    setChartLabel,
+    activeMode
+  } = useAppContext();
+
+  // Helper getters for mode state
+  const isCustomModeBool = selectedMode === 'Custom';
+  const isChartModeBool = selectedMode === 'Chart';
+  const isCustomChartModeBool = isChartModeBool && chartMode === 'Custom';
+  
   const [theme] = useState(
     window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
   );
+  
   const scrollRef = useRef<HTMLElement>(null);
   const latestRequestRef = useRef(0);
   const vidUrlRef = useRef<string | null>(null);
-  const isCustomMode = selectedMode === 'Custom';
-  const isChartMode = selectedMode === 'Chart';
-  const isCustomChartMode = isChartMode && chartMode === 'Custom';
 
   useEffect(() => {
-    // Cleanup for the object URL to prevent memory leaks.
     return () => {
       if (vidUrlRef.current) {
         URL.revokeObjectURL(vidUrlRef.current);
@@ -98,8 +99,8 @@ export default function App() {
     setTextResponse(null);
     setApiError(null);
     setChartLabel(
-      isChartMode
-        ? isCustomChartMode
+      isChartModeBool
+        ? isCustomChartModeBool
           ? chartPrompt
           : chartMode
         : '',
@@ -108,11 +109,11 @@ export default function App() {
     try {
       const promptConfig = modes[mode].prompt;
       const prompt =
-        isCustomMode && typeof promptConfig === 'function'
+        isCustomModeBool && typeof promptConfig === 'function'
           ? promptConfig(customPrompt)
-          : isChartMode && typeof promptConfig === 'function'
+          : isChartModeBool && typeof promptConfig === 'function'
           ? promptConfig(
-              isCustomChartMode
+              isCustomChartModeBool
                 ? chartPrompt
                 : modes[mode].subModes![chartMode],
             )
@@ -121,19 +122,22 @@ export default function App() {
       let resp;
       const maxRetries = 3;
       for (let i = 0; i < maxRetries; i++) {
-        // Abort if a new request has started during the await
         if (latestRequestRef.current !== requestId) return;
 
         resp = await generateContent(prompt, file);
 
         const hasFunctionCall = resp.functionCalls?.[0];
         const hasText = resp.text;
-
-        if (hasFunctionCall || hasText) {
-          break; // Valid response received, exit the loop.
+        const finishReason = resp.candidates?.[0]?.finishReason;
+        
+        if (finishReason === 'SAFETY' || finishReason === 'RECITATION') {
+          break;
         }
 
-        // If not the last attempt, wait with exponential backoff before retrying.
+        if (hasFunctionCall || hasText) {
+          break;
+        }
+
         if (i < maxRetries - 1) {
           const delay = 1000 * 2 ** i + Math.random() * 1000;
           await new Promise((resolve) => setTimeout(resolve, delay));
@@ -149,12 +153,20 @@ export default function App() {
           setTimecodes(call.args.timecodes as Timecode[]);
         }
       } else if (resp.text) {
-        // All model output is rendered as text by React, mitigating XSS risks.
         setTextResponse(resp.text);
       } else {
-        setApiError(
-          "The model didn't return a valid response after multiple attempts. Please try a different prompt.",
-        );
+        const finishReason = resp.candidates?.[0]?.finishReason;
+        if (finishReason === 'SAFETY') {
+          setApiError(
+            'The model blocked the response due to safety concerns. Please try a different prompt or video.',
+          );
+        } else if (finishReason === 'RECITATION') {
+          setApiError('The model blocked the response due to recitation concerns.');
+        } else {
+          setApiError(
+            "The model didn't return a valid response after multiple attempts. Please try a different prompt.",
+          );
+        }
       }
     } catch (e) {
       if (latestRequestRef.current === requestId) {
@@ -170,7 +182,7 @@ export default function App() {
   };
 
   const handleCancel = () => {
-    latestRequestRef.current = Date.now(); // Invalidate the ongoing request
+    latestRequestRef.current = Date.now();
     setIsLoading(false);
     setApiError(null);
   };
@@ -196,7 +208,6 @@ export default function App() {
     setVideoDuration(0);
     setMediaType(isVideo ? 'video' : 'audio');
 
-    // Revoke the previous object URL if it exists.
     if (vidUrlRef.current) {
       URL.revokeObjectURL(vidUrlRef.current);
     }
@@ -239,21 +250,10 @@ export default function App() {
           {vidUrl && !isLoadingVideo && (
             <>
               <Sidebar
-                showSidebar={showSidebar}
-                mediaType={mediaType}
-                selectedMode={selectedMode}
-                setSelectedMode={setSelectedMode}
                 onModeSelect={onModeSelect}
-                isLoading={isLoading}
-                customPrompt={customPrompt}
-                setCustomPrompt={setCustomPrompt}
-                chartMode={chartMode}
-                setChartMode={setChartMode}
-                chartPrompt={chartPrompt}
-                setChartPrompt={setChartPrompt}
-                isCustomMode={isCustomMode}
-                isChartMode={isChartMode}
-                isCustomChartMode={isCustomChartMode}
+                isCustomMode={isCustomModeBool}
+                isChartMode={isChartModeBool}
+                isCustomChartMode={isCustomChartModeBool}
                 chartModes={chartModes}
               />
               <button
@@ -268,34 +268,24 @@ export default function App() {
           )}
 
           <VideoPlayer
-            url={vidUrl}
-            mediaType={mediaType}
-            requestedTimecode={requestedTimecode}
-            timecodeList={timecodeList}
-            jumpToTimecode={setRequestedTimecode}
-            isLoadingVideo={isLoadingVideo}
-            videoError={videoError}
-            uploadProgress={uploadProgress}
-            uploadStatus={uploadStatus}
             onFileChange={handleFileChange}
-            onDurationChange={setVideoDuration}
           />
         </section>
 
         <OutputPanel
-          activeMode={activeMode}
-          isLoading={isLoading}
-          apiError={apiError}
-          textResponse={textResponse}
-          timecodeList={timecodeList}
           handleCancel={handleCancel}
           scrollRef={scrollRef}
-          chartLabel={chartLabel}
-          setRequestedTimecode={setRequestedTimecode}
           hasFile={!!vidUrl}
-          videoDuration={videoDuration}
         />
       </div>
     </main>
+  );
+}
+
+export default function App() {
+  return (
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
   );
 }

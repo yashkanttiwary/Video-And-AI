@@ -16,7 +16,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {GoogleGenAI} from '@google/genai';
+import {GoogleGenAI, HarmBlockThreshold, HarmCategory} from '@google/genai';
 import {File as UploadedFile} from '@google/genai/server';
 import functions from './functions';
 
@@ -30,7 +30,7 @@ async function generateContent(
   file: UploadedFile,
 ) {
   const response = await client.models.generateContent({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3-pro-preview',
     contents: {
       parts: [
         {text},
@@ -46,6 +46,24 @@ async function generateContent(
       systemInstruction,
       temperature: 0.5,
       tools: [{functionDeclarations: functions}],
+      safetySettings: [
+        {
+          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+          threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+          threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+          threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+          threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        },
+      ],
     },
   });
 
@@ -72,8 +90,17 @@ async function uploadFile(
   let getFile = await client.files.get({
     name: uploadedFile.name,
   });
+  
   let progress = 50;
+  let retries = 0;
+  const maxRetries = 60; // Approx 2 minutes (60 * 2s)
+
   while (getFile.state === 'PROCESSING') {
+    if (retries >= maxRetries) {
+      throw new Error('File processing timed out. Please try again.');
+    }
+    retries++;
+    
     progress = Math.min(progress + 5, 95);
     onProgress(progress);
     await new Promise((resolve) => {

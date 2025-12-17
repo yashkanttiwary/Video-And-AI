@@ -17,7 +17,7 @@
 // limitations under the License.
 
 import c from 'classnames';
-import {KeyboardEvent, RefObject} from 'react';
+import {KeyboardEvent, RefObject, useEffect, useRef} from 'react';
 import ActionToolbar from './ActionToolbar';
 import Chart from './Chart';
 import modes from './modes';
@@ -28,34 +28,42 @@ import type {
   TextTimecode,
 } from './types';
 import {timeToSecs} from './utils';
+import {useAppContext} from './context';
 
 interface OutputPanelProps {
-  activeMode: string | undefined;
-  isLoading: boolean;
-  apiError: string | null;
-  textResponse: string | null;
-  timecodeList: Timecode[] | null;
   handleCancel: () => void;
   scrollRef: RefObject<HTMLElement>;
-  chartLabel: string;
-  setRequestedTimecode: (time: number) => void;
   hasFile: boolean;
-  videoDuration: number;
 }
 
 export default function OutputPanel({
-  activeMode,
-  isLoading,
-  apiError,
-  textResponse,
-  timecodeList,
   handleCancel,
   scrollRef,
-  chartLabel,
-  setRequestedTimecode,
   hasFile,
-  videoDuration,
 }: OutputPanelProps) {
+  const {
+    activeMode,
+    isLoading,
+    apiError,
+    textResponse,
+    timecodeList,
+    chartLabel,
+    setRequestedTimecode,
+    videoDuration,
+    activeSegmentIndex
+  } = useAppContext();
+
+  const activeItemRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (activeSegmentIndex !== -1 && activeItemRef.current) {
+      activeItemRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  }, [activeSegmentIndex]);
+
   const handleKeydown = (e: KeyboardEvent, callback: () => void) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -66,8 +74,6 @@ export default function OutputPanel({
   const textBasedTimecodes =
     timecodeList?.filter((item): item is TextTimecode => 'text' in item) || [];
 
-  // Show the action toolbar for any mode that produces text-based timecodes,
-  // as long as it's not the special Table or Chart view.
   const showActionToolbar =
     textBasedTimecodes.length > 0 &&
     activeMode !== 'Table' &&
@@ -105,9 +111,12 @@ export default function OutputPanel({
             <tbody>
               {timecodeList.map((item, i) => {
                 const {time, text, objects} = item as ObjectTimecode;
+                const isActive = i === activeSegmentIndex;
                 return (
                   <tr
                     key={i}
+                    ref={isActive ? (el) => (activeItemRef.current = el) : null}
+                    className={c({activeRow: isActive})}
                     role="button"
                     tabIndex={0}
                     onClick={() => setRequestedTimecode(timeToSecs(time))}
@@ -140,26 +149,36 @@ export default function OutputPanel({
       if (activeMode && modes[activeMode]?.isList) {
         return (
           <ul>
-            {textBasedTimecodes.map(({time, text}, i) => (
-              <li key={i} className="outputItem">
-                <button onClick={() => setRequestedTimecode(timeToSecs(time))}>
-                  <time>{time}</time>
-                  <p className="text">{text}</p>
-                </button>
-              </li>
-            ))}
+            {textBasedTimecodes.map(({time, text}, i) => {
+               const isActive = i === activeSegmentIndex;
+               return (
+                <li key={i} className="outputItem">
+                  <button 
+                    ref={isActive ? (el) => (activeItemRef.current = el) : null}
+                    className={c({activeItem: isActive})}
+                    onClick={() => setRequestedTimecode(timeToSecs(time))}>
+                    <time>{time}</time>
+                    <p className="text">{text}</p>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         );
       }
-      return textBasedTimecodes.map(({time, text}, i) => (
-        <button
-          key={i}
-          className="sentence"
-          onClick={() => setRequestedTimecode(timeToSecs(time))}>
-          <time>{time}</time>
-          <span>{text}</span>
-        </button>
-      ));
+      return textBasedTimecodes.map(({time, text}, i) => {
+         const isActive = i === activeSegmentIndex;
+         return (
+          <button
+            key={i}
+            ref={isActive ? (el) => (activeItemRef.current = el) : null}
+            className={c('sentence', {activeSentence: isActive})}
+            onClick={() => setRequestedTimecode(timeToSecs(time))}>
+            <time>{time}</time>
+            <span>{text}</span>
+          </button>
+        );
+      });
     }
     return null;
   };

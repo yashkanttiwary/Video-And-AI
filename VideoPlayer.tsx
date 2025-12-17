@@ -20,6 +20,7 @@ import c from 'classnames';
 import {ChangeEvent, useCallback, useEffect, useRef, useState} from 'react';
 import type {Timecode, ValueTimecode} from './types';
 import {timeToSecs} from './utils';
+import {useAppContext} from './context';
 
 const formatTime = (t: number) =>
   `${Math.floor(t / 60)}:${Math.floor(t % 60)
@@ -27,32 +28,25 @@ const formatTime = (t: number) =>
     .padStart(2, '0')}`;
 
 interface VideoPlayerProps {
-  url: string | null;
-  mediaType: 'video' | 'audio' | null;
-  timecodeList: Timecode[] | null;
-  requestedTimecode: number | null;
-  isLoadingVideo: boolean;
-  videoError: string | null;
-  uploadProgress: number;
-  uploadStatus: string;
-  jumpToTimecode: (time: number) => void;
   onFileChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  onDurationChange: (duration: number) => void;
 }
 
-export default function VideoPlayer({
-  url,
-  mediaType,
-  timecodeList,
-  requestedTimecode,
-  isLoadingVideo,
-  videoError,
-  uploadProgress,
-  uploadStatus,
-  jumpToTimecode,
-  onFileChange,
-  onDurationChange,
-}: VideoPlayerProps) {
+export default function VideoPlayer({onFileChange}: VideoPlayerProps) {
+  const {
+    vidUrl: url,
+    mediaType,
+    timecodeList,
+    requestedTimecode,
+    isLoadingVideo,
+    videoError,
+    setVideoError,
+    uploadProgress,
+    uploadStatus,
+    setRequestedTimecode: jumpToTimecode,
+    setVideoDuration: onDurationChange,
+    setActiveSegmentIndex
+  } = useAppContext();
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const playerRef = useRef<HTMLDivElement | null>(null);
   const [duration, setDuration] = useState(0);
@@ -118,6 +112,20 @@ export default function VideoPlayer({
     onDurationChange(newDuration);
   };
 
+  const handleError = () => {
+    const error = videoRef.current?.error;
+    let message = "An unknown error occurred.";
+    if (error) {
+      switch (error.code) {
+        case 1: message = "Aborted: The fetching process was aborted."; break;
+        case 2: message = "Network: A network error occurred."; break;
+        case 3: message = "Decode: The media could not be decoded. The format might be unsupported."; break;
+        case 4: message = "Source Not Supported: The media format is not supported."; break;
+      }
+    }
+    setVideoError(message);
+  };
+
   const updateTime = () => {
     if (!videoRef.current) return;
     if (!isScrubbing) {
@@ -147,12 +155,16 @@ export default function VideoPlayer({
       }
 
       if (bestIndex !== -1) {
+        setActiveSegmentIndex(bestIndex);
         const current = timecodeList[bestIndex];
         newCaption = 'text' in current ? current.text : null;
+      } else {
+        setActiveSegmentIndex(-1);
       }
       setCurrentCaption(newCaption);
     } else {
       setCurrentCaption(null);
+      setActiveSegmentIndex(-1);
     }
   };
 
@@ -163,6 +175,7 @@ export default function VideoPlayer({
     setScrubberTime(0);
     setIsPlaying(false);
     setCurrentCaption(null);
+    setActiveSegmentIndex(-1);
   }, [url]);
 
   useEffect(() => {
@@ -193,7 +206,7 @@ export default function VideoPlayer({
 
   return (
     <div className="videoPlayer" ref={playerRef}>
-      {url && !isLoadingVideo ? (
+      {url && !isLoadingVideo && !videoError ? (
         <>
           <div className="mediaContainer">
             {mediaType === 'audio' && (
@@ -211,6 +224,7 @@ export default function VideoPlayer({
               onTimeUpdate={updateTime}
               onPlay={onPlay}
               onPause={onPause}
+              onError={handleError}
             />
 
             {currentCaption && (
@@ -326,7 +340,7 @@ export default function VideoPlayer({
               />
               <label htmlFor="fileUpload" className="uploadLabel">
                 <span className="icon">upload</span>
-                <p className={c({error: videoError})}>
+                <p className={c({error: !!videoError})}>
                   {videoError
                     ? videoError
                     : 'Drag and drop a video or audio file here, or click to browse.'}
