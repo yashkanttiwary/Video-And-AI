@@ -269,6 +269,8 @@ main {
   display: flex;
   flex-direction: column;
 }
+
+/* Push the first element to the bottom, effectively pushing the whole stack down */
 .sidebarContent > :first-child {
   margin-top: auto;
 }
