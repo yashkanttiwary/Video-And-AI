@@ -265,6 +265,12 @@ main {
   flex: 1 1 auto; 
   overflow-y: auto;
   min-height: 0; 
+  /* Push content to bottom */
+  display: flex;
+  flex-direction: column;
+}
+.sidebarContent > :first-child {
+  margin-top: auto;
 }
 
 /* Custom Scrollbar - Cleaner */
