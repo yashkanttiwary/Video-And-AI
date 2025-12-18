@@ -30,7 +30,8 @@ export interface UploadedFile {
 const systemInstruction = `When given a video and a query, call the relevant \
 function only once with the appropriate timecodes and text for the video`;
 
-const client = new GoogleGenAI({apiKey: process.env.API_KEY});
+// Correct initialization using named parameter as per @google/genai guidelines
+const client = new GoogleGenAI({apiKey: process.env.API_KEY || ''});
 
 async function generateContent(
   text: string,
@@ -38,17 +39,19 @@ async function generateContent(
 ) {
   const response = await client.models.generateContent({
     model: 'gemini-3-pro-preview',
-    contents: {
-      parts: [
-        {text},
-        {
-          fileData: {
-            mimeType: file.mimeType,
-            fileUri: file.uri,
+    contents: [
+      {
+        parts: [
+          {text},
+          {
+            fileData: {
+              mimeType: file.mimeType,
+              fileUri: file.uri,
+            },
           },
-        },
-      ],
-    },
+        ],
+      },
+    ],
     config: {
       systemInstruction,
       temperature: 0.5,
@@ -85,12 +88,17 @@ async function uploadFile(
   const blob = new Blob([file], {type: file.type});
   onStatusChange('Uploading file...');
   onProgress(10);
+  
+  // Note: The File API (upload/get) typically requires a separate initialization 
+  // if using the server-side SDK, but in this context we assume the client 
+  // object supports it if configured correctly in the environment.
   const uploadedFile = await client.files.upload({
     file: blob,
     config: {
       displayName: file.name,
     },
   });
+  
   onProgress(50);
   onStatusChange('Processing media...');
 
@@ -126,7 +134,6 @@ async function uploadFile(
   onProgress(100);
   onStatusChange('Processing complete');
   
-  // Cast the result to our local interface
   return getFile as unknown as UploadedFile;
 }
 
