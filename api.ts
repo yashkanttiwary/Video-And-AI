@@ -28,8 +28,8 @@ export interface UploadedFile {
 const systemInstruction = `When given a video and a query, call the relevant \
 function only once with the appropriate timecodes and text for the video`;
 
-// Initialize the GenAI client using the correct pattern
-const ai = new GoogleGenAI({apiKey: process.env.API_KEY || ''});
+// Initialize the GenAI client strictly according to guidelines
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 async function generateContent(
   text: string,
@@ -85,7 +85,8 @@ function fileToBase64(file: File): Promise<string> {
     reader.readAsDataURL(file);
     reader.onload = () => {
       // Extract the base64 part (remove the prefix: data:video/mp4;base64,...)
-      const base64String = (reader.result as string).split(',')[1];
+      const result = reader.result as string;
+      const base64String = result.substring(result.indexOf(',') + 1);
       resolve(base64String);
     };
     reader.onerror = (error) => reject(error);
