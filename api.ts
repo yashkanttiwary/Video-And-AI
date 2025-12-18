@@ -17,8 +17,15 @@
 // limitations under the License.
 
 import {GoogleGenAI, HarmBlockThreshold, HarmCategory} from '@google/genai';
-import {File as UploadedFile} from '@google/genai/server';
 import functions from './functions';
+
+// Define the type locally to avoid importing from server-side paths
+export interface UploadedFile {
+  name: string;
+  uri: string;
+  mimeType: string;
+  state: string;
+}
 
 const systemInstruction = `When given a video and a query, call the relevant \
 function only once with the appropriate timecodes and text for the video`;
@@ -118,7 +125,9 @@ async function uploadFile(
 
   onProgress(100);
   onStatusChange('Processing complete');
-  return getFile;
+  
+  // Cast the result to our local interface
+  return getFile as unknown as UploadedFile;
 }
 
 export {generateContent, uploadFile};

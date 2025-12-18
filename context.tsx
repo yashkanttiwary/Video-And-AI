@@ -17,7 +17,7 @@
 // limitations under the License.
 
 import {createContext, useContext, useState, ReactNode, Dispatch, SetStateAction} from 'react';
-import type {File as UploadedFile} from '@google/genai/server';
+import type {UploadedFile} from './api';
 import type {Timecode} from './types';
 import modes from './modes';
 
