@@ -19,39 +19,35 @@
 import {GoogleGenAI, HarmBlockThreshold, HarmCategory} from '@google/genai';
 import functions from './functions';
 
-// Define the type locally to avoid importing from server-side paths
 export interface UploadedFile {
   name: string;
-  uri: string;
+  data: string; // Base64 encoded data for inlineData
   mimeType: string;
-  state: string;
 }
 
 const systemInstruction = `When given a video and a query, call the relevant \
 function only once with the appropriate timecodes and text for the video`;
 
-// Correct initialization using named parameter as per @google/genai guidelines
-const client = new GoogleGenAI({apiKey: process.env.API_KEY || ''});
+// Initialize the GenAI client using the correct pattern
+const ai = new GoogleGenAI({apiKey: process.env.API_KEY || ''});
 
 async function generateContent(
   text: string,
   file: UploadedFile,
 ) {
-  const response = await client.models.generateContent({
+  const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
-    contents: [
-      {
-        parts: [
-          {text},
-          {
-            fileData: {
-              mimeType: file.mimeType,
-              fileUri: file.uri,
-            },
+    contents: {
+      parts: [
+        {text},
+        {
+          inlineData: {
+            mimeType: file.mimeType,
+            data: file.data,
           },
-        ],
-      },
-    ],
+        },
+      ],
+    },
     config: {
       systemInstruction,
       temperature: 0.5,
@@ -80,61 +76,44 @@ async function generateContent(
   return response;
 }
 
+/**
+ * Converts a file to a base64 string for processing via inlineData.
+ */
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      // Extract the base64 part (remove the prefix: data:video/mp4;base64,...)
+      const base64String = (reader.result as string).split(',')[1];
+      resolve(base64String);
+    };
+    reader.onerror = (error) => reject(error);
+  });
+}
+
 async function uploadFile(
   file: File,
   onProgress: (progress: number) => void,
   onStatusChange: (status: string) => void,
 ): Promise<UploadedFile> {
-  const blob = new Blob([file], {type: file.type});
-  onStatusChange('Uploading file...');
-  onProgress(10);
+  onStatusChange('Reading file...');
+  onProgress(30);
   
-  // Note: The File API (upload/get) typically requires a separate initialization 
-  // if using the server-side SDK, but in this context we assume the client 
-  // object supports it if configured correctly in the environment.
-  const uploadedFile = await client.files.upload({
-    file: blob,
-    config: {
-      displayName: file.name,
-    },
-  });
-  
-  onProgress(50);
-  onStatusChange('Processing media...');
-
-  let getFile = await client.files.get({
-    name: uploadedFile.name,
-  });
-  
-  let progress = 50;
-  let retries = 0;
-  const maxRetries = 60; // Approx 2 minutes (60 * 2s)
-
-  while (getFile.state === 'PROCESSING') {
-    if (retries >= maxRetries) {
-      throw new Error('File processing timed out. Please try again.');
-    }
-    retries++;
+  try {
+    const base64Data = await fileToBase64(file);
+    onProgress(100);
+    onStatusChange('Analysis ready');
     
-    progress = Math.min(progress + 5, 95);
-    onProgress(progress);
-    await new Promise((resolve) => {
-      setTimeout(resolve, 2000);
-    });
-    getFile = await client.files.get({
-      name: uploadedFile.name,
-    });
-  }
-
-  if (getFile.state === 'FAILED') {
+    return {
+      name: file.name,
+      data: base64Data,
+      mimeType: file.type,
+    };
+  } catch (e) {
     onProgress(0);
-    throw new Error('File processing failed.');
+    throw new Error('Could not read file. It might be too large or corrupted.');
   }
-
-  onProgress(100);
-  onStatusChange('Processing complete');
-  
-  return getFile as unknown as UploadedFile;
 }
 
 export {generateContent, uploadFile};
