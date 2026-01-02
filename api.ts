@@ -28,21 +28,16 @@ export interface UploadedFile {
 const systemInstruction = `When given a video and a query, call the relevant \
 function only once with the appropriate timecodes and text for the video`;
 
-// Helper to get client with correct key precedence
-function getClient(apiKey: string) {
-  const key = apiKey || process.env.API_KEY;
-  if (!key) {
-    throw new Error('No API Key provided. Please set your API Key in the settings.');
-  }
-  return new GoogleGenAI({ apiKey: key });
-}
-
 async function generateContent(
-  apiKey: string,
   text: string,
   file: UploadedFile,
 ) {
-  const ai = getClient(apiKey);
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error('API Key not configured in environment.');
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
     contents: {
@@ -102,7 +97,6 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 async function uploadFile(
-  apiKey: string,
   file: File,
   onProgress: (progress: number) => void,
   onStatusChange: (status: string) => void,
@@ -110,11 +104,8 @@ async function uploadFile(
   onStatusChange('Reading file...');
   onProgress(30);
   
-  // We check for the API key availability early, even though we only need it 
-  // later for generation, to give immediate feedback if it's missing.
-  const key = apiKey || process.env.API_KEY;
-  if (!key) {
-    throw new Error('No API Key provided. Please set your API Key in the settings.');
+  if (!process.env.API_KEY) {
+    throw new Error('API Key not configured in environment.');
   }
   
   try {

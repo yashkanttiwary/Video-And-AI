@@ -24,6 +24,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import {GenerateContentResponse} from '@google/genai';
 import {generateContent, uploadFile} from './api';
 import modes from './modes';
 import OutputPanel from './OutputPanel';
@@ -51,11 +52,9 @@ function AppContent() {
     setUploadProgress,
     setUploadStatus,
     setApiError,
-    isCustomMode, isChartMode, isCustomChartMode,
     selectedMode, chartMode, chartPrompt, customPrompt,
     setChartLabel,
-    activeMode,
-    userApiKey
+    activeMode
   } = useAppContext();
 
   // Helper getters for mode state
@@ -121,12 +120,12 @@ function AppContent() {
             )
           : (promptConfig as string);
 
-      let resp;
+      let resp: GenerateContentResponse | null = null;
       const maxRetries = 3;
       for (let i = 0; i < maxRetries; i++) {
         if (latestRequestRef.current !== requestId) return;
 
-        resp = await generateContent(userApiKey, prompt, file);
+        resp = await generateContent(prompt, file);
 
         const hasFunctionCall = resp.functionCalls?.[0];
         const hasText = resp.text;
@@ -148,16 +147,22 @@ function AppContent() {
 
       if (latestRequestRef.current !== requestId) return;
 
-      const call = resp.functionCalls?.[0];
+      if (!resp) {
+        setApiError('No response received from the model.');
+        return;
+      }
+      
+      const safeResp = resp as GenerateContentResponse;
+      const call = safeResp.functionCalls?.[0];
 
       if (call?.name && call.args) {
         if (call.name.startsWith('set_timecodes')) {
           setTimecodes(call.args.timecodes as Timecode[]);
         }
-      } else if (resp.text) {
-        setTextResponse(resp.text);
+      } else if (safeResp.text) {
+        setTextResponse(safeResp.text);
       } else {
-        const finishReason = resp.candidates?.[0]?.finishReason;
+        const finishReason = safeResp.candidates?.[0]?.finishReason;
         if (finishReason === 'SAFETY') {
           setApiError(
             'The model blocked the response due to safety concerns. Please try a different prompt or video.',
@@ -219,7 +224,6 @@ function AppContent() {
 
     try {
       const res = await uploadFile(
-        userApiKey,
         fileToUpload,
         setUploadProgress,
         setUploadStatus,

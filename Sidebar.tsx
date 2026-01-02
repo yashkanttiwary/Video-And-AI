@@ -48,8 +48,6 @@ export default function Sidebar({
     setChartMode,
     chartPrompt,
     setChartPrompt,
-    setIsApiKeyModalOpen,
-    userApiKey
   } = useAppContext();
 
   const [width, setWidth] = useState(250);
@@ -169,16 +167,6 @@ export default function Sidebar({
       style={{width: showSidebar ? width : 0}}>
       
       <div className="sidebarContent">
-        <div className="sidebarHeader">
-           <button 
-             className={c("apiKeyButton", { hasKey: !!userApiKey })} 
-             onClick={() => setIsApiKeyModalOpen(true)}
-             title="Set Gemini API Key"
-           >
-             <span className="icon">key</span>
-             {userApiKey ? "API Key Set" : "Set API Key"}
-           </button>
-        </div>
         {renderContent()}
       </div>
 

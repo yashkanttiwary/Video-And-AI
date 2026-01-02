@@ -235,7 +235,7 @@ export default function VideoPlayer({onFileChange}: VideoPlayerProps) {
           <div className="videoControls">
             <div className="videoScrubber">
               <input
-                style={{'--pct': `${currentPercent}%`}}
+                style={{'--pct': `${currentPercent}%`} as any}
                 type="range"
                 min="0"
                 max="1"
