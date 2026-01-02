@@ -7,8 +7,9 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: {
-      // This is crucial: it makes process.env.API_KEY available in the browser
-      'process.env.API_KEY': JSON.stringify(env.API_KEY)
+      // Use '|| ""' to ensure it's replaced with a string even if the env var is missing.
+      // This prevents "Uncaught ReferenceError: process is not defined" in the browser.
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || "")
     },
     build: {
       rollupOptions: {
