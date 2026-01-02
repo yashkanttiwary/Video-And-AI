@@ -31,6 +31,7 @@ import Sidebar from './Sidebar';
 import type {Timecode} from './types';
 import VideoPlayer from './VideoPlayer';
 import {AppProvider, useAppContext} from './context';
+import ApiKeyModal from './ApiKeyModal';
 
 const chartModes = Object.keys(modes.Chart.subModes!);
 
@@ -53,7 +54,8 @@ function AppContent() {
     isCustomMode, isChartMode, isCustomChartMode,
     selectedMode, chartMode, chartPrompt, customPrompt,
     setChartLabel,
-    activeMode
+    activeMode,
+    userApiKey
   } = useAppContext();
 
   // Helper getters for mode state
@@ -124,7 +126,7 @@ function AppContent() {
       for (let i = 0; i < maxRetries; i++) {
         if (latestRequestRef.current !== requestId) return;
 
-        resp = await generateContent(prompt, file);
+        resp = await generateContent(userApiKey, prompt, file);
 
         const hasFunctionCall = resp.functionCalls?.[0];
         const hasText = resp.text;
@@ -217,6 +219,7 @@ function AppContent() {
 
     try {
       const res = await uploadFile(
+        userApiKey,
         fileToUpload,
         setUploadProgress,
         setUploadStatus,
@@ -245,6 +248,7 @@ function AppContent() {
       className={theme}
       onDrop={uploadMedia}
       onDragOver={(e) => e.preventDefault()}>
+      <ApiKeyModal />
       <div className="contentWrapper">
         <section className="top">
           {vidUrl && !isLoadingVideo && (

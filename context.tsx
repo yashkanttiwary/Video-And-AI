@@ -64,6 +64,10 @@ interface AppContextType {
   setChartLabel: Dispatch<SetStateAction<string>>;
   activeSegmentIndex: number;
   setActiveSegmentIndex: Dispatch<SetStateAction<number>>;
+  userApiKey: string;
+  setUserApiKey: (key: string) => void;
+  isApiKeyModalOpen: boolean;
+  setIsApiKeyModalOpen: Dispatch<SetStateAction<boolean>>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -90,6 +94,15 @@ export function AppProvider({children}: {children?: ReactNode}) {
   const [chartPrompt, setChartPrompt] = useState('');
   const [chartLabel, setChartLabel] = useState('');
   const [activeSegmentIndex, setActiveSegmentIndex] = useState(-1);
+  
+  // API Key state management with local storage persistence
+  const [userApiKey, setUserApiKeyState] = useState(localStorage.getItem('gemini_api_key') || '');
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+
+  const setUserApiKey = (key: string) => {
+    setUserApiKeyState(key);
+    localStorage.setItem('gemini_api_key', key);
+  };
 
   return (
     <AppContext.Provider
@@ -114,7 +127,9 @@ export function AppProvider({children}: {children?: ReactNode}) {
         chartMode, setChartMode,
         chartPrompt, setChartPrompt,
         chartLabel, setChartLabel,
-        activeSegmentIndex, setActiveSegmentIndex
+        activeSegmentIndex, setActiveSegmentIndex,
+        userApiKey, setUserApiKey,
+        isApiKeyModalOpen, setIsApiKeyModalOpen
       }}>
       {children}
     </AppContext.Provider>

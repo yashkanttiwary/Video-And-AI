@@ -272,7 +272,7 @@ main {
 
 /* Push the first element to the bottom, effectively pushing the whole stack down */
 .sidebarContent > :first-child {
-  margin-top: auto;
+  /* margin-top: auto;  REMOVED this as we want elements to stack from top now */
 }
 
 /* Custom Scrollbar - Cleaner */
@@ -1181,4 +1181,146 @@ video {
   .output {
     min-height: 300px;
   }
+}
+
+/* API Key Modal & Button Styles */
+.sidebarHeader {
+  margin-bottom: 20px;
+}
+.apiKeyButton {
+  width: 100%;
+  background: var(--highlight);
+  font-size: 16px;
+  justify-content: flex-start;
+  padding: 12px;
+  border: var(--border-width) dashed var(--border);
+  color: var(--mid);
+}
+.apiKeyButton:hover {
+  background: var(--active-item-bg);
+  border-style: solid;
+  color: var(--text);
+}
+.apiKeyButton.hasKey {
+  border-style: solid;
+  border-color: var(--accent);
+  color: var(--text);
+  background: var(--surface);
+}
+.apiKeyButton.hasKey .icon {
+  color: var(--accent);
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modalContent {
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  box-shadow: 8px 8px 0 rgba(0,0,0,0.5);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 500px;
+  margin: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: var(--highlight);
+  border-bottom: var(--border-width) solid var(--border);
+}
+.modalHeader h3 {
+  font-size: 16px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.modalHeader .closeButton {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 4px;
+}
+.modalHeader .closeButton:hover {
+  background: var(--track);
+}
+
+.modalBody {
+  padding: 25px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.modalBody p {
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.inputGroup input {
+  font-family: monospace;
+  letter-spacing: 1px;
+}
+
+.helperText {
+  font-size: 16px;
+  color: var(--mid);
+}
+.helperText a {
+  color: var(--link);
+}
+
+.modalFooter {
+  padding: 15px 20px;
+  background: var(--background);
+  border-top: var(--border-width) solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+}
+.modalFooter button.secondary {
+  background: transparent;
+  box-shadow: none;
+}
+.modalFooter button.secondary:hover {
+  background: var(--track);
+}
+.modalFooter button.primary {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--border);
 }
