@@ -9,6 +9,18 @@ export default defineConfig(({ mode }) => {
     define: {
       // This is crucial: it makes process.env.API_KEY available in the browser
       'process.env.API_KEY': JSON.stringify(env.API_KEY)
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom'],
+            genai: ['@google/genai'],
+            d3: ['d3-array', 'd3-scale', 'd3-shape']
+          }
+        }
+      },
+      chunkSizeWarningLimit: 1000
     }
   }
 })
