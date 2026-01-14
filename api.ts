@@ -32,12 +32,8 @@ async function generateContent(
   text: string,
   file: UploadedFile,
 ) {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    throw new Error('API Key not configured in environment.');
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
+  // Always use new GoogleGenAI({apiKey: process.env.API_KEY});
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
     contents: {
