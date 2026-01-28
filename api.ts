@@ -33,9 +33,12 @@ async function generateContent(
   text: string,
   file: UploadedFile,
 ) {
+  if (!process.env.API_KEY) {
+    throw new Error('API Key not configured in environment.');
+  }
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  // Using gemini-3-pro-preview as it supports long context for videos
+  // Using gemini-3-pro-preview as per guidelines for complex tasks
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
     contents: {
@@ -93,21 +96,24 @@ async function uploadFile(
     onProgress(10);
 
     // Step 1: Upload the file
+    // Cast to any to handle TypeScript definition mismatches (File vs UploadFileResponse)
     const uploadResponse = await ai.files.upload({
       file: file,
       config: { mimeType: file.type }
-    });
+    }) as any;
 
     onProgress(40);
     onStatusChange('Google is processing video...');
 
     // Step 2: Poll for active status
-    let fileRecord = uploadResponse.file;
+    // Handle both { file: ... } (SDK wrapper) and direct File object structure
+    let fileRecord = uploadResponse.file || uploadResponse;
+
     while (fileRecord.state === 'PROCESSING') {
       // Wait 2 seconds before checking again
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      const statusResponse = await ai.files.get({ name: fileRecord.name });
-      fileRecord = statusResponse.file;
+      const statusResponse = await ai.files.get({ name: fileRecord.name }) as any;
+      fileRecord = statusResponse.file || statusResponse;
     }
 
     if (fileRecord.state === 'FAILED') {
