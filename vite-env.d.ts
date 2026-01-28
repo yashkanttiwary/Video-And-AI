@@ -1,7 +1,4 @@
 declare module "*.css";
 
-declare namespace NodeJS {
-  interface ProcessEnv {
-    API_KEY: string | undefined;
-  }
-}
+// Note: 'process' is already declared in the global scope (e.g. by @types/node).
+// We refrain from redeclaring it to avoid conflicts.
