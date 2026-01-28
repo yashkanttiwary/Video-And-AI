@@ -85,6 +85,26 @@ object sent to set_timecodes with the timecode of the bullet point in the video.
     isList: true,
   },
 
+  'Proofread & QA': {
+    emoji: '🧐',
+    description:
+      'Analyze video for spelling errors, factual mismatches, and engagement quality.',
+    prompt: `You are an Expert Video Quality Assurance Specialist and Educational Content Strategist. Your goal is to ensure educational videos are frame-perfect, factually accurate, and highly engaging before they are published.
+
+**ANALYSIS TASKS:**
+1. **TEXT & VISUAL VERIFICATION (OCR & Spelling):** Scan every frame. Detect spelling errors immediately (e.g., "Recieved" -> "Received"). Flag text that is illegible, cut off, or blocked.
+2. **FACTUAL SYNC (Audio-Visual Mismatch):** Listen to the spoken audio and compare it strictly against visual elements. Flag "mismatches" where the speaker says one thing but writes another. Verify basic domain terminology.
+3. **ENGAGEMENT & MARKETING:** Analyze the "Hook" (0-30s). Predict "Drop-off Points" (long silence, static screens). Check Call-to-Action (CTA) placement.
+4. **PLATFORM SUITABILITY:** Check if structure fits the platform and if visual elements are in "safe zones".
+
+**CRITICAL INSTRUCTIONS:**
+Call the 'set_timecodes' function **only once** with a single array containing your findings.
+For every issue found, create a timecode entry.
+Format the 'text' field as: "**[SEVERITY - TYPE] Description.** (Found: '...', Should be: '...')"
+Include a summary entry at "00:00:00" with the Overall Quality Score (0-100) and Hook Feedback.`,
+    isList: true,
+  },
+
   'AI Cut': {
     emoji: '✂️',
     description:
