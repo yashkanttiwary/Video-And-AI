@@ -21,28 +21,30 @@ import functions from './functions';
 
 export interface UploadedFile {
   name: string;
-  data: string; // Base64 encoded data for inlineData
+  uri: string;
   mimeType: string;
 }
 
 const systemInstruction = `When given a video and a query, call the relevant \
-function only once with the appropriate timecodes and text for the video`;
+function only once with the appropriate timecodes and text for the video. \
+You must analyze the ENTIRE duration of the video, from start to finish.`;
 
 async function generateContent(
   text: string,
   file: UploadedFile,
 ) {
-  // Always use new GoogleGenAI({apiKey: process.env.API_KEY});
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  // Using gemini-3-pro-preview as it supports long context for videos
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
     contents: {
       parts: [
         {text},
         {
-          inlineData: {
+          fileData: {
             mimeType: file.mimeType,
-            data: file.data,
+            fileUri: file.uri,
           },
         },
       ],
@@ -75,48 +77,56 @@ async function generateContent(
   return response;
 }
 
-/**
- * Converts a file to a base64 string for processing via inlineData.
- */
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      // Extract the base64 part (remove the prefix: data:video/mp4;base64,...)
-      const result = reader.result as string;
-      const base64String = result.substring(result.indexOf(',') + 1);
-      resolve(base64String);
-    };
-    reader.onerror = (error) => reject(error);
-  });
-}
-
 async function uploadFile(
   file: File,
   onProgress: (progress: number) => void,
   onStatusChange: (status: string) => void,
 ): Promise<UploadedFile> {
-  onStatusChange('Reading file...');
-  onProgress(30);
-  
   if (!process.env.API_KEY) {
     throw new Error('API Key not configured in environment.');
   }
-  
+
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
   try {
-    const base64Data = await fileToBase64(file);
+    onStatusChange('Uploading to Gemini...');
+    onProgress(10);
+
+    // Step 1: Upload the file
+    const uploadResponse = await ai.files.upload({
+      file: file,
+      config: { mimeType: file.type }
+    });
+
+    onProgress(40);
+    onStatusChange('Google is processing video...');
+
+    // Step 2: Poll for active status
+    let fileRecord = uploadResponse.file;
+    while (fileRecord.state === 'PROCESSING') {
+      // Wait 2 seconds before checking again
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const statusResponse = await ai.files.get({ name: fileRecord.name });
+      fileRecord = statusResponse.file;
+    }
+
+    if (fileRecord.state === 'FAILED') {
+      throw new Error('Video processing failed on Google servers.');
+    }
+
     onProgress(100);
-    onStatusChange('Analysis ready');
-    
+    onStatusChange('Ready for analysis');
+
     return {
-      name: file.name,
-      data: base64Data,
-      mimeType: file.type,
+      name: fileRecord.name,
+      uri: fileRecord.uri,
+      mimeType: fileRecord.mimeType,
     };
+
   } catch (e) {
     onProgress(0);
-    throw new Error('Could not read file. It might be too large or corrupted.');
+    console.error(e);
+    throw new Error('Upload failed. ' + (e instanceof Error ? e.message : 'Unknown error'));
   }
 }
 
