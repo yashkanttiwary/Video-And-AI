@@ -106,8 +106,8 @@ async function uploadFile(
     onStatusChange('Google is processing video...');
 
     // Step 2: Poll for active status
-    // Handle both { file: ... } (SDK wrapper) and direct File object structure
-    let fileRecord = uploadResponse.file || uploadResponse;
+    // Explicitly type fileRecord as any to prevent TS2339 errors
+    let fileRecord: any = uploadResponse.file || uploadResponse;
 
     while (fileRecord.state === 'PROCESSING') {
       // Wait 2 seconds before checking again
