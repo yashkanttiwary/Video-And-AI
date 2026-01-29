@@ -32,11 +32,13 @@ You must analyze the ENTIRE duration of the video, from start to finish.`;
 async function generateContent(
   text: string,
   file: UploadedFile,
+  apiKey?: string,
 ) {
-  if (!process.env.API_KEY) {
-    throw new Error('API Key not configured in environment.');
+  const key = apiKey || process.env.API_KEY;
+  if (!key) {
+    throw new Error('API Key not configured. Please log in with a valid key.');
   }
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: key });
   
   // Using gemini-3-pro-preview as per guidelines for complex tasks
   const response = await ai.models.generateContent({
@@ -84,12 +86,14 @@ async function uploadFile(
   file: File,
   onProgress: (progress: number) => void,
   onStatusChange: (status: string) => void,
+  apiKey?: string,
 ): Promise<UploadedFile> {
-  if (!process.env.API_KEY) {
-    throw new Error('API Key not configured in environment.');
+  const key = apiKey || process.env.API_KEY;
+  if (!key) {
+    throw new Error('API Key not configured. Please log in with a valid key.');
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: key });
 
   try {
     onStatusChange('Uploading to Gemini...');

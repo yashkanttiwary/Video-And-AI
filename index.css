@@ -270,11 +270,6 @@ main {
   flex-direction: column;
 }
 
-/* Push the first element to the bottom, effectively pushing the whole stack down */
-.sidebarContent > :first-child {
-  /* margin-top: auto;  REMOVED this as we want elements to stack from top now */
-}
-
 /* Custom Scrollbar - Cleaner */
 ::-webkit-scrollbar {
   width: 10px;
@@ -578,34 +573,6 @@ main {
 }
 .modeTable tr.activeRow td {
   background-color: var(--active-item-bg);
-}
-
-.modelSelector {
-  position: relative;
-  margin-bottom: 10px;
-}
-.modelSelector::after {
-  content: "▼";
-  display: block;
-  position: absolute;
-  right: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  font-size: 12px;
-}
-.modelSelector select {
-  width: 100%;
-  appearance: none;
-  color: var(--text);
-  background: var(--surface);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius);
-  padding: 10px;
-  font-family: var(--font-body);
-  outline: none;
-  box-shadow: 2px 2px 0 var(--shadow-color);
-  cursor: pointer;
 }
 
 .loading {
@@ -1183,40 +1150,148 @@ video {
   }
 }
 
-/* API Key Modal & Button Styles */
-.sidebarHeader {
-  margin-bottom: 20px;
+/* User Profile & Login Styles */
+.userProfile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+  border-bottom: var(--border-width) solid var(--border);
 }
-.apiKeyButton {
-  width: 100%;
-  background: var(--highlight);
-  font-size: 16px;
-  justify-content: flex-start;
-  padding: 12px;
-  border: var(--border-width) dashed var(--border);
+.userName {
+  font-family: var(--font-header);
+  font-size: 12px;
+  color: var(--primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+.logoutButton {
+  padding: 4px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
   color: var(--mid);
 }
-.apiKeyButton:hover {
-  background: var(--active-item-bg);
-  border-style: solid;
-  color: var(--text);
+.logoutButton:hover {
+  color: var(--secondary);
+  background: transparent;
+  transform: none;
+  box-shadow: none;
 }
-.apiKeyButton.hasKey {
-  border-style: solid;
-  border-color: var(--accent);
-  color: var(--text);
-  background: var(--surface);
-}
-.apiKeyButton.hasKey .icon {
-  color: var(--accent);
+.logoutButton .icon {
+  font-size: 20px;
 }
 
-.modalOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
+/* Login Page */
+.loginPage {
   width: 100%;
   height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--background);
+  /* Retro Grid Background */
+  background-image: linear-gradient(var(--track) 1px, transparent 1px),
+  linear-gradient(90deg, var(--track) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.loginCard {
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  padding: 40px;
+  border-radius: var(--radius);
+  box-shadow: 8px 8px 0 rgba(0,0,0,0.2);
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.loginHeader {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 10px;
+  color: var(--primary);
+}
+.loginHeader .icon {
+  font-size: 32px;
+}
+.loginHeader h1 {
+  font-size: 24px;
+  margin: 0;
+}
+
+.loginDescription {
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--mid);
+  margin-bottom: 10px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.inputGroup label {
+  font-family: var(--font-header);
+  font-size: 12px;
+  color: var(--text);
+}
+.inputGroup input {
+  padding: 12px;
+  font-family: var(--font-body);
+}
+
+.helper {
+  font-size: 16px;
+  color: var(--mid);
+  margin-top: 5px;
+}
+.helper a {
+  color: var(--link);
+  font-weight: bold;
+}
+
+.errorBanner {
+  background: #FFEBEE;
+  color: #C62828;
+  padding: 12px;
+  border-radius: var(--radius);
+  border: 1px solid #C62828;
+  font-size: 16px;
+}
+.dark .errorBanner {
+  background: #3E2723;
+  color: #FF8A65;
+  border-color: #FF8A65;
+}
+
+.loginButton {
+  margin-top: 10px;
+  background: #1E88E5; /* Distinct Blue */
+  color: #FFF;
+  border: var(--border-width) solid var(--border);
+  padding: 15px;
+  justify-content: center;
+  font-family: var(--font-header);
+  font-size: 14px;
+}
+.loginButton:hover:not([disabled]) {
+  background: #1565C0;
+  color: #FFF;
+}
+
+/* MODAL */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
   z-index: 1000;
@@ -1234,15 +1309,15 @@ video {
 .modalContent {
   background: var(--surface);
   border: var(--border-width) solid var(--border);
-  box-shadow: 8px 8px 0 rgba(0,0,0,0.5);
+  padding: 30px;
   border-radius: var(--radius);
-  width: 100%;
-  max-width: 500px;
-  margin: 20px;
+  box-shadow: 8px 8px 0 rgba(0,0,0,0.3);
+  width: 90%;
+  max-width: 450px;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  gap: 20px;
+  animation: slideUp 0.2s ease-out;
 }
 
 @keyframes slideUp {
@@ -1252,75 +1327,58 @@ video {
 
 .modalHeader {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  padding: 15px 20px;
-  background: var(--highlight);
-  border-bottom: var(--border-width) solid var(--border);
+  margin-bottom: 10px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--track);
 }
-.modalHeader h3 {
+.modalHeader h2 {
   font-size: 16px;
+  color: var(--primary);
   margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
-.modalHeader .closeButton {
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.modalButton {
+  padding: 10px 16px;
+  font-size: 16px;
+}
+.modalButton.primary {
+  background: var(--primary);
+  color: #FFF;
+  border-color: var(--border);
+}
+.modalButton.secondary {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.modalButton.secondary:hover {
+  background: var(--background);
+  box-shadow: none;
+}
+
+.userActions {
+    display: flex;
+    gap: 5px;
+}
+.iconButton {
+  padding: 6px;
   background: transparent;
   border: none;
   box-shadow: none;
-  padding: 4px;
-}
-.modalHeader .closeButton:hover {
-  background: var(--track);
-}
-
-.modalBody {
-  padding: 25px 30px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-.modalBody p {
-  line-height: 1.5;
-  color: var(--text);
-}
-
-.inputGroup {
-  display: flex;
-  flex-direction: column;
-}
-
-.inputGroup input {
-  font-family: monospace;
-  letter-spacing: 1px;
-}
-
-.helperText {
-  font-size: 16px;
   color: var(--mid);
+  border-radius: var(--radius);
 }
-.helperText a {
-  color: var(--link);
-}
-
-.modalFooter {
-  padding: 15px 20px;
-  background: var(--background);
-  border-top: var(--border-width) solid var(--border);
-  display: flex;
-  justify-content: flex-end;
-  gap: 15px;
-}
-.modalFooter button.secondary {
-  background: transparent;
-  box-shadow: none;
-}
-.modalFooter button.secondary:hover {
-  background: var(--track);
-}
-.modalFooter button.primary {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--border);
+.iconButton:hover {
+  color: var(--text);
+  background: var(--active-item-bg);
+  transform: none;
 }

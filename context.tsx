@@ -16,10 +16,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {createContext, useContext, useState, ReactNode, Dispatch, SetStateAction} from 'react';
+import {createContext, useContext, useState, useEffect, ReactNode, Dispatch, SetStateAction} from 'react';
 import type {UploadedFile} from './api';
 import type {Timecode} from './types';
 import modes from './modes';
+
+export interface User {
+  name: string;
+  apiKey: string;
+}
 
 interface AppContextType {
   vidUrl: string | null;
@@ -64,6 +69,10 @@ interface AppContextType {
   setChartLabel: Dispatch<SetStateAction<string>>;
   activeSegmentIndex: number;
   setActiveSegmentIndex: Dispatch<SetStateAction<number>>;
+  user: User | null;
+  setUser: Dispatch<SetStateAction<User | null>>;
+  showSettings: boolean;
+  setShowSettings: Dispatch<SetStateAction<boolean>>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -90,6 +99,20 @@ export function AppProvider({children}: {children?: ReactNode}) {
   const [chartPrompt, setChartPrompt] = useState('');
   const [chartLabel, setChartLabel] = useState('');
   const [activeSegmentIndex, setActiveSegmentIndex] = useState(-1);
+  const [showSettings, setShowSettings] = useState(false);
+  
+  const [user, setUser] = useState<User | null>(() => {
+    const stored = localStorage.getItem('yash_video_analyzer_user');
+    return stored ? JSON.parse(stored) : null;
+  });
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('yash_video_analyzer_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('yash_video_analyzer_user');
+    }
+  }, [user]);
 
   return (
     <AppContext.Provider
@@ -115,6 +138,8 @@ export function AppProvider({children}: {children?: ReactNode}) {
         chartPrompt, setChartPrompt,
         chartLabel, setChartLabel,
         activeSegmentIndex, setActiveSegmentIndex,
+        user, setUser,
+        showSettings, setShowSettings
       }}>
       {children}
     </AppContext.Provider>

@@ -32,6 +32,7 @@ import Sidebar from './Sidebar';
 import type {Timecode} from './types';
 import VideoPlayer from './VideoPlayer';
 import {AppProvider, useAppContext} from './context';
+import LoginPage from './LoginPage';
 import ApiKeyModal from './ApiKeyModal';
 
 const chartModes = Object.keys(modes.Chart.subModes!);
@@ -54,8 +55,14 @@ function AppContent() {
     setApiError,
     selectedMode, chartMode, chartPrompt, customPrompt,
     setChartLabel,
-    activeMode
+    activeMode,
+    user
   } = useAppContext();
+
+  // Show Login Page if no user is present
+  if (!user) {
+    return <LoginPage />;
+  }
 
   // Helper getters for mode state
   const isCustomModeBool = selectedMode === 'Custom';
@@ -125,7 +132,8 @@ function AppContent() {
       for (let i = 0; i < maxRetries; i++) {
         if (latestRequestRef.current !== requestId) return;
 
-        resp = await generateContent(prompt, file);
+        // Pass user API key here safely
+        resp = await generateContent(prompt, file, user?.apiKey);
 
         const hasFunctionCall = resp.functionCalls?.[0];
         const hasText = resp.text;
@@ -223,10 +231,12 @@ function AppContent() {
     setVidUrl(newUrl);
 
     try {
+      // Pass user API key here safely
       const res = await uploadFile(
         fileToUpload,
         setUploadProgress,
         setUploadStatus,
+        user?.apiKey
       );
       setFile(res);
     } catch (e) {
@@ -252,7 +262,6 @@ function AppContent() {
       className={theme}
       onDrop={uploadMedia}
       onDragOver={(e) => e.preventDefault()}>
-      <ApiKeyModal />
       <div className="contentWrapper">
         <section className="top">
           {vidUrl && !isLoadingVideo && (
@@ -286,6 +295,7 @@ function AppContent() {
           hasFile={!!vidUrl}
         />
       </div>
+      <ApiKeyModal />
     </main>
   );
 }
