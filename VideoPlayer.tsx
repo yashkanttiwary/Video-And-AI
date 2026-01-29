@@ -1,3 +1,4 @@
+
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -44,7 +45,9 @@ export default function VideoPlayer({onFileChange}: VideoPlayerProps) {
     uploadStatus,
     setRequestedTimecode: jumpToTimecode,
     setVideoDuration: onDurationChange,
-    setActiveSegmentIndex
+    setActiveSegmentIndex,
+    user,
+    setUser
   } = useAppContext();
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -346,6 +349,20 @@ export default function VideoPlayer({onFileChange}: VideoPlayerProps) {
                     : 'Drag and drop a video or audio file here, or click to browse.'}
                 </p>
               </label>
+              
+              <div className="apiKeyInputWrapper">
+                <input
+                  type="password"
+                  className="apiKeyInput"
+                  placeholder="Enter Gemini API Key"
+                  value={user?.apiKey || ''}
+                  onChange={(e) => {
+                    const newVal = e.target.value;
+                    setUser((prev) => prev ? ({...prev, apiKey: newVal}) : {name: 'Guest', apiKey: newVal});
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
             </>
           )}
         </div>

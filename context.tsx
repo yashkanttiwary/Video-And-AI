@@ -1,3 +1,4 @@
+
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -100,7 +101,7 @@ export function AppProvider({children}: {children?: ReactNode}) {
   
   const [user, setUser] = useState<User | null>(() => {
     const stored = localStorage.getItem('yash_video_analyzer_user');
-    return stored ? JSON.parse(stored) : null;
+    return stored ? JSON.parse(stored) : { name: 'Guest', apiKey: '' };
   });
 
   useEffect(() => {

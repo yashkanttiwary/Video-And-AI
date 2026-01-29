@@ -1,3 +1,4 @@
+
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -48,8 +49,7 @@ export default function Sidebar({
     setChartMode,
     chartPrompt,
     setChartPrompt,
-    user,
-    setUser
+    user
   } = useAppContext();
 
   const [width, setWidth] = useState(250);
@@ -142,12 +142,6 @@ export default function Sidebar({
     } else {
       return (
         <>
-          <div className="userProfile">
-            <span className="userName">Hello, {user?.name}</span>
-            <button className="logoutButton" onClick={() => setUser(null)} title="Logout">
-              <span className="icon">logout</span>
-            </button>
-          </div>
           <h2>Explore this {mediaType} via:</h2>
           <div className="modeList">
             {Object.entries(modes).map(([mode, {emoji, description}]) => (
@@ -190,6 +184,7 @@ export default function Sidebar({
           onClick={() => onModeSelect(selectedMode)}
           disabled={
             isLoading ||
+            !user?.apiKey ||
             (isCustomMode && !customPrompt.trim()) ||
             (isChartMode && isCustomChartMode && !chartPrompt.trim())
           }>

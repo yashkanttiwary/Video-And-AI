@@ -1,3 +1,4 @@
+
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -32,7 +33,6 @@ import Sidebar from './Sidebar';
 import type {Timecode} from './types';
 import VideoPlayer from './VideoPlayer';
 import {AppProvider, useAppContext} from './context';
-import LoginPage from './LoginPage';
 
 const chartModes = Object.keys(modes.Chart.subModes!);
 
@@ -57,11 +57,6 @@ function AppContent() {
     activeMode,
     user
   } = useAppContext();
-
-  // Show Login Page if no user is present
-  if (!user) {
-    return <LoginPage />;
-  }
 
   // Helper getters for mode state
   const isCustomModeBool = selectedMode === 'Custom';
@@ -132,7 +127,7 @@ function AppContent() {
         if (latestRequestRef.current !== requestId) return;
 
         // Pass user API key here
-        resp = await generateContent(prompt, file, user.apiKey);
+        resp = await generateContent(prompt, file, user?.apiKey);
 
         const hasFunctionCall = resp.functionCalls?.[0];
         const hasText = resp.text;
@@ -235,7 +230,7 @@ function AppContent() {
         fileToUpload,
         setUploadProgress,
         setUploadStatus,
-        user.apiKey
+        user?.apiKey
       );
       setFile(res);
     } catch (e) {
