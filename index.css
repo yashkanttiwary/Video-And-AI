@@ -1275,7 +1275,7 @@ video {
 
 .loginButton {
   margin-top: 10px;
-  background: #1E88E5; /* Distinct Blue */
+  background: var(--primary);
   color: #FFF;
   border: var(--border-width) solid var(--border);
   padding: 15px;
@@ -1283,102 +1283,7 @@ video {
   font-family: var(--font-header);
   font-size: 14px;
 }
-.loginButton:hover:not([disabled]) {
-  background: #1565C0;
-  color: #FFF;
-}
-
-/* MODAL */
-.modalOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: fadeIn 0.2s ease-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.modalContent {
-  background: var(--surface);
-  border: var(--border-width) solid var(--border);
-  padding: 30px;
-  border-radius: var(--radius);
-  box-shadow: 8px 8px 0 rgba(0,0,0,0.3);
-  width: 90%;
-  max-width: 450px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  animation: slideUp 0.2s ease-out;
-}
-
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-.modalHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid var(--track);
-}
-.modalHeader h2 {
-  font-size: 16px;
-  color: var(--primary);
-  margin: 0;
-}
-
-.modalActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.modalButton {
-  padding: 10px 16px;
-  font-size: 16px;
-}
-.modalButton.primary {
-  background: var(--primary);
-  color: #FFF;
-  border-color: var(--border);
-}
-.modalButton.secondary {
-  background: transparent;
-  border-color: transparent;
-  box-shadow: none;
-}
-.modalButton.secondary:hover {
-  background: var(--background);
-  box-shadow: none;
-}
-
-.userActions {
-    display: flex;
-    gap: 5px;
-}
-.iconButton {
-  padding: 6px;
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  color: var(--mid);
-  border-radius: var(--radius);
-}
-.iconButton:hover {
-  color: var(--text);
+.loginButton:hover {
   background: var(--active-item-bg);
-  transform: none;
+  color: var(--text);
 }

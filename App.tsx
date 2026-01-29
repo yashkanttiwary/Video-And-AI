@@ -33,7 +33,6 @@ import type {Timecode} from './types';
 import VideoPlayer from './VideoPlayer';
 import {AppProvider, useAppContext} from './context';
 import LoginPage from './LoginPage';
-import ApiKeyModal from './ApiKeyModal';
 
 const chartModes = Object.keys(modes.Chart.subModes!);
 
@@ -132,8 +131,8 @@ function AppContent() {
       for (let i = 0; i < maxRetries; i++) {
         if (latestRequestRef.current !== requestId) return;
 
-        // Pass user API key here safely
-        resp = await generateContent(prompt, file, user?.apiKey);
+        // Pass user API key here
+        resp = await generateContent(prompt, file, user.apiKey);
 
         const hasFunctionCall = resp.functionCalls?.[0];
         const hasText = resp.text;
@@ -231,12 +230,12 @@ function AppContent() {
     setVidUrl(newUrl);
 
     try {
-      // Pass user API key here safely
+      // Pass user API key here
       const res = await uploadFile(
         fileToUpload,
         setUploadProgress,
         setUploadStatus,
-        user?.apiKey
+        user.apiKey
       );
       setFile(res);
     } catch (e) {
@@ -295,7 +294,6 @@ function AppContent() {
           hasFile={!!vidUrl}
         />
       </div>
-      <ApiKeyModal />
     </main>
   );
 }

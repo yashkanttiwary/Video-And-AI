@@ -49,8 +49,7 @@ export default function Sidebar({
     chartPrompt,
     setChartPrompt,
     user,
-    setUser,
-    setShowSettings
+    setUser
   } = useAppContext();
 
   const [width, setWidth] = useState(250);
@@ -144,15 +143,10 @@ export default function Sidebar({
       return (
         <>
           <div className="userProfile">
-            <span className="userName" title={user?.name}>Hello, {user?.name}</span>
-            <div className="userActions">
-              <button className="iconButton" onClick={() => setShowSettings(true)} title="Settings">
-                <span className="icon">settings</span>
-              </button>
-              <button className="iconButton" onClick={() => setUser(null)} title="Logout">
-                <span className="icon">logout</span>
-              </button>
-            </div>
+            <span className="userName">Hello, {user?.name}</span>
+            <button className="logoutButton" onClick={() => setUser(null)} title="Logout">
+              <span className="icon">logout</span>
+            </button>
           </div>
           <h2>Explore this {mediaType} via:</h2>
           <div className="modeList">

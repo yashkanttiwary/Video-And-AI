@@ -71,8 +71,6 @@ interface AppContextType {
   setActiveSegmentIndex: Dispatch<SetStateAction<number>>;
   user: User | null;
   setUser: Dispatch<SetStateAction<User | null>>;
-  showSettings: boolean;
-  setShowSettings: Dispatch<SetStateAction<boolean>>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -99,7 +97,6 @@ export function AppProvider({children}: {children?: ReactNode}) {
   const [chartPrompt, setChartPrompt] = useState('');
   const [chartLabel, setChartLabel] = useState('');
   const [activeSegmentIndex, setActiveSegmentIndex] = useState(-1);
-  const [showSettings, setShowSettings] = useState(false);
   
   const [user, setUser] = useState<User | null>(() => {
     const stored = localStorage.getItem('yash_video_analyzer_user');
@@ -138,8 +135,7 @@ export function AppProvider({children}: {children?: ReactNode}) {
         chartPrompt, setChartPrompt,
         chartLabel, setChartLabel,
         activeSegmentIndex, setActiveSegmentIndex,
-        user, setUser,
-        showSettings, setShowSettings
+        user, setUser
       }}>
       {children}
     </AppContext.Provider>
