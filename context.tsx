@@ -1,4 +1,3 @@
-
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -17,21 +16,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {createContext, useContext, useState, useEffect, ReactNode, Dispatch, SetStateAction} from 'react';
+import {createContext, useContext, useState, ReactNode, Dispatch, SetStateAction, useMemo, useEffect} from 'react';
 import type {UploadedFile} from './api';
 import type {Timecode} from './types';
 import modes from './modes';
 
-export interface User {
-  name: string;
-  apiKey: string;
-}
+// --- App Data Context (Low Frequency) ---
 
 interface AppContextType {
   vidUrl: string | null;
   setVidUrl: Dispatch<SetStateAction<string | null>>;
-  videoDuration: number;
-  setVideoDuration: Dispatch<SetStateAction<number>>;
   file: UploadedFile | null;
   setFile: Dispatch<SetStateAction<UploadedFile | null>>;
   mediaType: 'video' | 'audio' | null;
@@ -40,8 +34,6 @@ interface AppContextType {
   setTimecodeList: Dispatch<SetStateAction<Timecode[] | null>>;
   textResponse: string | null;
   setTextResponse: Dispatch<SetStateAction<string | null>>;
-  requestedTimecode: number | null;
-  setRequestedTimecode: Dispatch<SetStateAction<number | null>>;
   selectedMode: string;
   setSelectedMode: Dispatch<SetStateAction<string>>;
   activeMode: string | undefined;
@@ -68,22 +60,34 @@ interface AppContextType {
   setChartPrompt: Dispatch<SetStateAction<string>>;
   chartLabel: string;
   setChartLabel: Dispatch<SetStateAction<string>>;
-  activeSegmentIndex: number;
-  setActiveSegmentIndex: Dispatch<SetStateAction<number>>;
-  user: User | null;
-  setUser: Dispatch<SetStateAction<User | null>>;
+  isApiKeyModalOpen: boolean;
+  setIsApiKeyModalOpen: Dispatch<SetStateAction<boolean>>;
+  userApiKey: string;
+  setUserApiKey: Dispatch<SetStateAction<string>>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+// --- Playback Context (High Frequency) ---
+
+interface PlaybackContextType {
+  videoDuration: number;
+  setVideoDuration: Dispatch<SetStateAction<number>>;
+  requestedTimecode: number | null;
+  setRequestedTimecode: Dispatch<SetStateAction<number | null>>;
+  activeSegmentIndex: number;
+  setActiveSegmentIndex: Dispatch<SetStateAction<number>>;
+}
+
+const PlaybackContext = createContext<PlaybackContextType | undefined>(undefined);
+
 export function AppProvider({children}: {children?: ReactNode}) {
+  // App Data State
   const [vidUrl, setVidUrl] = useState<string | null>(null);
-  const [videoDuration, setVideoDuration] = useState(0);
   const [file, setFile] = useState<UploadedFile | null>(null);
   const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(null);
   const [timecodeList, setTimecodeList] = useState<Timecode[] | null>(null);
   const [textResponse, setTextResponse] = useState<string | null>(null);
-  const [requestedTimecode, setRequestedTimecode] = useState<number | null>(null);
   const [selectedMode, setSelectedMode] = useState<string>(Object.keys(modes)[0]);
   const [activeMode, setActiveMode] = useState<string>();
   const [isLoading, setIsLoading] = useState(false);
@@ -97,48 +101,62 @@ export function AppProvider({children}: {children?: ReactNode}) {
   const [chartMode, setChartMode] = useState<string>('Sentiment');
   const [chartPrompt, setChartPrompt] = useState('');
   const [chartLabel, setChartLabel] = useState('');
-  const [activeSegmentIndex, setActiveSegmentIndex] = useState(-1);
-  
-  const [user, setUser] = useState<User | null>(() => {
-    const stored = localStorage.getItem('yash_video_analyzer_user');
-    return stored ? JSON.parse(stored) : { name: 'Guest', apiKey: '' };
-  });
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
 
+  // Sync API key to local storage
   useEffect(() => {
-    if (user) {
-      localStorage.setItem('yash_video_analyzer_user', JSON.stringify(user));
+    if (userApiKey) {
+      localStorage.setItem('gemini_api_key', userApiKey);
     } else {
-      localStorage.removeItem('yash_video_analyzer_user');
+      localStorage.removeItem('gemini_api_key');
     }
-  }, [user]);
+  }, [userApiKey]);
+
+  // Playback State
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [requestedTimecode, setRequestedTimecode] = useState<number | null>(null);
+  const [activeSegmentIndex, setActiveSegmentIndex] = useState(-1);
+
+  // Memoize values to prevent unnecessary re-renders
+  const appValue = useMemo(() => ({
+    vidUrl, setVidUrl,
+    file, setFile,
+    mediaType, setMediaType,
+    timecodeList, setTimecodeList,
+    textResponse, setTextResponse,
+    selectedMode, setSelectedMode,
+    activeMode, setActiveMode,
+    isLoading, setIsLoading,
+    showSidebar, setShowSidebar,
+    isLoadingVideo, setIsLoadingVideo,
+    videoError, setVideoError,
+    uploadProgress, setUploadProgress,
+    uploadStatus, setUploadStatus,
+    apiError, setApiError,
+    customPrompt, setCustomPrompt,
+    chartMode, setChartMode,
+    chartPrompt, setChartPrompt,
+    chartLabel, setChartLabel,
+    isApiKeyModalOpen, setIsApiKeyModalOpen,
+    userApiKey, setUserApiKey,
+  }), [
+    vidUrl, file, mediaType, timecodeList, textResponse, selectedMode, activeMode,
+    isLoading, showSidebar, isLoadingVideo, videoError, uploadProgress, uploadStatus,
+    apiError, customPrompt, chartMode, chartPrompt, chartLabel, isApiKeyModalOpen, userApiKey
+  ]);
+
+  const playbackValue = useMemo(() => ({
+    videoDuration, setVideoDuration,
+    requestedTimecode, setRequestedTimecode,
+    activeSegmentIndex, setActiveSegmentIndex,
+  }), [videoDuration, requestedTimecode, activeSegmentIndex]);
 
   return (
-    <AppContext.Provider
-      value={{
-        vidUrl, setVidUrl,
-        videoDuration, setVideoDuration,
-        file, setFile,
-        mediaType, setMediaType,
-        timecodeList, setTimecodeList,
-        textResponse, setTextResponse,
-        requestedTimecode, setRequestedTimecode,
-        selectedMode, setSelectedMode,
-        activeMode, setActiveMode,
-        isLoading, setIsLoading,
-        showSidebar, setShowSidebar,
-        isLoadingVideo, setIsLoadingVideo,
-        videoError, setVideoError,
-        uploadProgress, setUploadProgress,
-        uploadStatus, setUploadStatus,
-        apiError, setApiError,
-        customPrompt, setCustomPrompt,
-        chartMode, setChartMode,
-        chartPrompt, setChartPrompt,
-        chartLabel, setChartLabel,
-        activeSegmentIndex, setActiveSegmentIndex,
-        user, setUser
-      }}>
-      {children}
+    <AppContext.Provider value={appValue}>
+      <PlaybackContext.Provider value={playbackValue}>
+        {children}
+      </PlaybackContext.Provider>
     </AppContext.Provider>
   );
 }
@@ -147,6 +165,14 @@ export function useAppContext() {
   const context = useContext(AppContext);
   if (context === undefined) {
     throw new Error('useAppContext must be used within an AppProvider');
+  }
+  return context;
+}
+
+export function usePlaybackContext() {
+  const context = useContext(PlaybackContext);
+  if (context === undefined) {
+    throw new Error('usePlaybackContext must be used within an AppProvider');
   }
   return context;
 }

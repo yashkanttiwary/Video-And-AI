@@ -270,6 +270,11 @@ main {
   flex-direction: column;
 }
 
+/* Push the first element to the bottom, effectively pushing the whole stack down */
+.sidebarContent > :first-child {
+  /* margin-top: auto;  REMOVED this as we want elements to stack from top now */
+}
+
 /* Custom Scrollbar - Cleaner */
 ::-webkit-scrollbar {
   width: 10px;
@@ -575,6 +580,34 @@ main {
   background-color: var(--active-item-bg);
 }
 
+.modelSelector {
+  position: relative;
+  margin-bottom: 10px;
+}
+.modelSelector::after {
+  content: "▼";
+  display: block;
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 12px;
+}
+.modelSelector select {
+  width: 100%;
+  appearance: none;
+  color: var(--text);
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  font-family: var(--font-body);
+  outline: none;
+  box-shadow: 2px 2px 0 var(--shadow-color);
+  cursor: pointer;
+}
+
 .loading {
   display: flex;
   align-items: center;
@@ -747,10 +780,8 @@ video {
   gap: 20px;
   cursor: pointer;
   width: 100%;
-  height: auto;
-  flex: 0;
+  height: 100%;
   padding: 20px;
-  margin-bottom: 20px;
 }
 .emptyVideo .icon {
   font-size: 64px;
@@ -1152,172 +1183,144 @@ video {
   }
 }
 
-/* User Profile & Login Styles */
-.userProfile {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 15px;
-  margin-bottom: 15px;
-  border-bottom: var(--border-width) solid var(--border);
+/* API Key Modal & Button Styles */
+.sidebarHeader {
+  margin-bottom: 20px;
 }
-.userName {
-  font-family: var(--font-header);
-  font-size: 12px;
-  color: var(--primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 150px;
-}
-.logoutButton {
-  padding: 4px;
-  background: transparent;
-  border: none;
-  box-shadow: none;
+.apiKeyButton {
+  width: 100%;
+  background: var(--highlight);
+  font-size: 16px;
+  justify-content: flex-start;
+  padding: 12px;
+  border: var(--border-width) dashed var(--border);
   color: var(--mid);
 }
-.logoutButton:hover {
-  color: var(--secondary);
-  background: transparent;
-  transform: none;
-  box-shadow: none;
+.apiKeyButton:hover {
+  background: var(--active-item-bg);
+  border-style: solid;
+  color: var(--text);
 }
-.logoutButton .icon {
-  font-size: 20px;
+.apiKeyButton.hasKey {
+  border-style: solid;
+  border-color: var(--accent);
+  color: var(--text);
+  background: var(--surface);
+}
+.apiKeyButton.hasKey .icon {
+  color: var(--accent);
 }
 
-/* Login Page */
-.loginPage {
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--background);
-  /* Retro Grid Background */
-  background-image: linear-gradient(var(--track) 1px, transparent 1px),
-  linear-gradient(90deg, var(--track) 1px, transparent 1px);
-  background-size: 40px 40px;
+  animation: fadeIn 0.2s ease-out;
 }
 
-.loginCard {
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modalContent {
   background: var(--surface);
   border: var(--border-width) solid var(--border);
-  padding: 40px;
+  box-shadow: 8px 8px 0 rgba(0,0,0,0.5);
   border-radius: var(--radius);
-  box-shadow: 8px 8px 0 rgba(0,0,0,0.2);
   width: 100%;
-  max-width: 480px;
+  max-width: 500px;
+  margin: 20px;
   display: flex;
   flex-direction: column;
-  gap: 25px;
+  overflow: hidden;
+  animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.loginHeader {
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: var(--highlight);
+  border-bottom: var(--border-width) solid var(--border);
+}
+.modalHeader h3 {
+  font-size: 16px;
+  margin: 0;
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 10px;
-  color: var(--primary);
+  gap: 10px;
 }
-.loginHeader .icon {
-  font-size: 32px;
+.modalHeader .closeButton {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 4px;
 }
-.loginHeader h1 {
-  font-size: 24px;
-  margin: 0;
+.modalHeader .closeButton:hover {
+  background: var(--track);
 }
 
-.loginDescription {
-  font-size: 18px;
+.modalBody {
+  padding: 25px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.modalBody p {
   line-height: 1.5;
-  color: var(--mid);
-  margin-bottom: 10px;
+  color: var(--text);
 }
 
 .inputGroup {
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
-.inputGroup label {
-  font-family: var(--font-header);
-  font-size: 12px;
-  color: var(--text);
-}
+
 .inputGroup input {
-  padding: 12px;
-  font-family: var(--font-body);
-}
-
-.helper {
-  font-size: 16px;
-  color: var(--mid);
-  margin-top: 5px;
-}
-.helper a {
-  color: var(--link);
-  font-weight: bold;
-}
-
-.errorBanner {
-  background: #FFEBEE;
-  color: #C62828;
-  padding: 12px;
-  border-radius: var(--radius);
-  border: 1px solid #C62828;
-  font-size: 16px;
-}
-.dark .errorBanner {
-  background: #3E2723;
-  color: #FF8A65;
-  border-color: #FF8A65;
-}
-
-.loginButton {
-  margin-top: 10px;
-  background: var(--primary);
-  color: #FFF;
-  border: var(--border-width) solid var(--border);
-  padding: 15px;
-  justify-content: center;
-  font-family: var(--font-header);
-  font-size: 14px;
-}
-.loginButton:hover {
-  background: var(--active-item-bg);
-  color: var(--text);
-}
-
-.apiKeyInputWrapper {
-  margin-top: 10px;
-  width: 100%;
-  max-width: 400px;
-  display: flex;
-  justify-content: center;
-  z-index: 10;
-  padding: 0 20px;
-}
-
-.apiKeyInput {
-  width: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid var(--border);
-  color: #FFF;
-  padding: 12px 16px;
-  border-radius: var(--radius);
-  font-family: var(--font-body);
-  text-align: center;
-  font-size: 16px;
+  font-family: monospace;
   letter-spacing: 1px;
 }
-.apiKeyInput:focus {
-    border-color: var(--primary);
-    outline: none;
-    background: rgba(0,0,0,0.7);
-    box-shadow: 0 0 0 2px rgba(92, 107, 192, 0.2);
+
+.helperText {
+  font-size: 16px;
+  color: var(--mid);
 }
-.apiKeyInput::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+.helperText a {
+  color: var(--link);
+}
+
+.modalFooter {
+  padding: 15px 20px;
+  background: var(--background);
+  border-top: var(--border-width) solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+}
+.modalFooter button.secondary {
+  background: transparent;
+  box-shadow: none;
+}
+.modalFooter button.secondary:hover {
+  background: var(--track);
+}
+.modalFooter button.primary {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--border);
 }

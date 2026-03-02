@@ -1,4 +1,3 @@
-
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -18,7 +17,7 @@
 // limitations under the License.
 
 import c from 'classnames';
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {useCallback, useRef, useState, PointerEvent} from 'react';
 import modes from './modes';
 import {useAppContext} from './context';
 
@@ -49,38 +48,36 @@ export default function Sidebar({
     setChartMode,
     chartPrompt,
     setChartPrompt,
-    user
+    setIsApiKeyModalOpen,
+    userApiKey
   } = useAppContext();
 
   const [width, setWidth] = useState(250);
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const startXRef = useRef<number>(0);
+  const startWidthRef = useRef<number>(0);
 
-  const startResizing = useCallback(() => setIsResizing(true), []);
-  const stopResizing = useCallback(() => setIsResizing(false), []);
+  const onPointerDown = useCallback((e: PointerEvent) => {
+    if (!sidebarRef.current) return;
+    setIsResizing(true);
+    startXRef.current = e.clientX;
+    startWidthRef.current = width;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }, [width]);
 
-  const resize = useCallback(
-    (mouseMoveEvent: MouseEvent) => {
-      if (isResizing && sidebarRef.current) {
-        const newWidth =
-          mouseMoveEvent.clientX -
-          sidebarRef.current.getBoundingClientRect().left;
-        setWidth(Math.max(200, Math.min(newWidth, 600)));
-      }
-    },
-    [isResizing],
-  );
-
-  useEffect(() => {
-    if (isResizing) {
-      window.addEventListener('mousemove', resize);
-      window.addEventListener('mouseup', stopResizing);
+  const onPointerMove = useCallback((e: PointerEvent) => {
+    if (isResizing && sidebarRef.current) {
+      const deltaX = e.clientX - startXRef.current;
+      const newWidth = startWidthRef.current + deltaX;
+      setWidth(Math.max(200, Math.min(newWidth, 600)));
     }
-    return () => {
-      window.removeEventListener('mousemove', resize);
-      window.removeEventListener('mouseup', stopResizing);
-    };
-  }, [isResizing, resize, stopResizing]);
+  }, [isResizing]);
+
+  const onPointerUp = useCallback((e: PointerEvent) => {
+    setIsResizing(false);
+    e.currentTarget.releasePointerCapture(e.pointerId);
+  }, []);
 
   const hasSubMode = isCustomMode || isChartMode;
 
@@ -169,6 +166,16 @@ export default function Sidebar({
       style={{width: showSidebar ? width : 0}}>
       
       <div className="sidebarContent">
+        <div className="sidebarHeader">
+           <button 
+             className={c("apiKeyButton", { hasKey: !!userApiKey })} 
+             onClick={() => setIsApiKeyModalOpen(true)}
+             title="Set Gemini API Key"
+           >
+             <span className="icon">key</span>
+             {userApiKey ? "API Key Set" : "Set API Key"}
+           </button>
+        </div>
         {renderContent()}
       </div>
 
@@ -184,7 +191,6 @@ export default function Sidebar({
           onClick={() => onModeSelect(selectedMode)}
           disabled={
             isLoading ||
-            !user?.apiKey ||
             (isCustomMode && !customPrompt.trim()) ||
             (isChartMode && isCustomChartMode && !chartPrompt.trim())
           }>
@@ -192,7 +198,12 @@ export default function Sidebar({
         </button>
       </div>
       
-      <div className="resizer" onMouseDown={startResizing} />
+      <div 
+        className="resizer" 
+        onPointerDown={onPointerDown} 
+        onPointerMove={onPointerMove} 
+        onPointerUp={onPointerUp} 
+      />
     </div>
   );
 }

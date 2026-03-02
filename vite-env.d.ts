@@ -1,4 +1,9 @@
-declare module "*.css";
+interface ImportMetaEnv {
+  readonly API_KEY: string;
+}
 
-// Note: 'process' is already declared in the global scope (e.g. by @types/node).
-// We refrain from redeclaring it to avoid conflicts.
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+
+declare module "*.css";

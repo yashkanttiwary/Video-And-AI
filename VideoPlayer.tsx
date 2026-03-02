@@ -1,4 +1,3 @@
-
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -21,7 +20,7 @@ import c from 'classnames';
 import {ChangeEvent, useCallback, useEffect, useRef, useState} from 'react';
 import type {Timecode, ValueTimecode} from './types';
 import {timeToSecs} from './utils';
-import {useAppContext} from './context';
+import {useAppContext, usePlaybackContext} from './context';
 
 const formatTime = (t: number) =>
   `${Math.floor(t / 60)}:${Math.floor(t % 60)
@@ -37,18 +36,19 @@ export default function VideoPlayer({onFileChange}: VideoPlayerProps) {
     vidUrl: url,
     mediaType,
     timecodeList,
-    requestedTimecode,
     isLoadingVideo,
     videoError,
     setVideoError,
     uploadProgress,
     uploadStatus,
+  } = useAppContext();
+
+  const {
+    requestedTimecode,
     setRequestedTimecode: jumpToTimecode,
     setVideoDuration: onDurationChange,
-    setActiveSegmentIndex,
-    user,
-    setUser
-  } = useAppContext();
+    setActiveSegmentIndex
+  } = usePlaybackContext();
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const playerRef = useRef<HTMLDivElement | null>(null);
@@ -253,6 +253,8 @@ export default function VideoPlayer({onFileChange}: VideoPlayerProps) {
                 }}
                 onPointerDown={() => setIsScrubbing(true)}
                 onPointerUp={() => setIsScrubbing(false)}
+                aria-label="Seek video"
+                aria-valuetext={formatTime(currentSecs)}
               />
             </div>
             <div className="timecodeMarkers">
@@ -349,20 +351,6 @@ export default function VideoPlayer({onFileChange}: VideoPlayerProps) {
                     : 'Drag and drop a video or audio file here, or click to browse.'}
                 </p>
               </label>
-              
-              <div className="apiKeyInputWrapper">
-                <input
-                  type="password"
-                  className="apiKeyInput"
-                  placeholder="Enter Gemini API Key"
-                  value={user?.apiKey || ''}
-                  onChange={(e) => {
-                    const newVal = e.target.value;
-                    setUser((prev) => prev ? ({...prev, apiKey: newVal}) : {name: 'Guest', apiKey: newVal});
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
             </>
           )}
         </div>

@@ -19,7 +19,7 @@
 import {max, min} from 'd3-array';
 import {scaleBand, scaleLinear} from 'd3-scale';
 import {line as d3Line} from 'd3-shape';
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useRef, useState, useMemo} from 'react';
 import type {ValueTimecode} from './types';
 import {timeToSecs} from './utils';
 
@@ -36,22 +36,27 @@ export default function Chart({data, yLabel, jumpToTimecode}: ChartProps) {
   const margin = 55;
   const xMax = width;
   const yMax = height - margin;
-  const xScale = scaleBand<string>()
-    .range([margin + 10, xMax])
-    .domain(data.map((d) => d.time))
-    .padding(0.2);
 
-  const vals = data.map((d) => d.value);
-  const yScale = scaleLinear()
-    .domain([min(vals) ?? 0, max(vals) ?? 10])
-    .nice()
-    .range([yMax, margin]);
+  const { xScale, yScale, lineGen, yTicks } = useMemo(() => {
+    const xScale = scaleBand<string>()
+        .range([margin + 10, xMax])
+        .domain(data.map((d) => d.time))
+        .padding(0.2);
 
-  const yTicks = yScale.ticks(Math.floor(height / 70));
+    const vals = data.map((d) => d.value);
+    const yScale = scaleLinear()
+        .domain([min(vals) ?? 0, max(vals) ?? 10])
+        .nice()
+        .range([yMax, margin]);
 
-  const lineGen = d3Line<ValueTimecode>()
-    .x((d) => xScale(d.time) ?? 0)
-    .y((d) => yScale(d.value));
+    const yTicks = yScale.ticks(Math.floor(height / 70));
+
+    const lineGen = d3Line<ValueTimecode>()
+        .x((d) => xScale(d.time) ?? 0)
+        .y((d) => yScale(d.value));
+        
+    return { xScale, yScale, lineGen, yTicks };
+  }, [data, width, height, xMax, yMax, margin]);
 
   useEffect(() => {
     const setSize = () => {

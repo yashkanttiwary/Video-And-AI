@@ -22,13 +22,12 @@ import ActionToolbar from './ActionToolbar';
 import Chart from './Chart';
 import modes from './modes';
 import type {
-  Timecode,
   ObjectTimecode,
   ValueTimecode,
   TextTimecode,
 } from './types';
 import {timeToSecs} from './utils';
-import {useAppContext} from './context';
+import {useAppContext, usePlaybackContext} from './context';
 
 interface OutputPanelProps {
   handleCancel: () => void;
@@ -48,10 +47,13 @@ export default function OutputPanel({
     textResponse,
     timecodeList,
     chartLabel,
+  } = useAppContext();
+
+  const {
     setRequestedTimecode,
     videoDuration,
     activeSegmentIndex
-  } = useAppContext();
+  } = usePlaybackContext();
 
   const activeItemRef = useRef<HTMLElement | null>(null);
 

@@ -1,4 +1,3 @@
-
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -25,38 +24,38 @@ import {
   useRef,
   useState,
 } from 'react';
-import {GenerateContentResponse} from '@google/genai';
-import {generateContent, uploadFile} from './api';
+import {uploadFile} from './api';
 import modes from './modes';
 import OutputPanel from './OutputPanel';
 import Sidebar from './Sidebar';
-import type {Timecode} from './types';
 import VideoPlayer from './VideoPlayer';
-import {AppProvider, useAppContext} from './context';
+import {AppProvider, useAppContext, usePlaybackContext} from './context';
+import ApiKeyModal from './ApiKeyModal';
+import { useAnalysis } from './useAnalysis';
 
 const chartModes = Object.keys(modes.Chart.subModes!);
 
 function AppContent() {
   const {
     vidUrl, setVidUrl,
-    setVideoDuration,
-    file, setFile,
-    mediaType, setMediaType,
+    setFile,
+    setMediaType,
     setTimecodeList,
     setTextResponse,
-    setActiveMode,
-    setIsLoading,
     showSidebar, setShowSidebar,
     isLoadingVideo, setIsLoadingVideo,
     setVideoError,
     setUploadProgress,
     setUploadStatus,
     setApiError,
-    selectedMode, chartMode, chartPrompt, customPrompt,
-    setChartLabel,
+    selectedMode, chartMode,
     activeMode,
-    user
+    userApiKey
   } = useAppContext();
+
+  const { setVideoDuration } = usePlaybackContext();
+
+  const { runAnalysis, cancelAnalysis } = useAnalysis();
 
   // Helper getters for mode state
   const isCustomModeBool = selectedMode === 'Custom';
@@ -68,7 +67,6 @@ function AppContent() {
   );
   
   const scrollRef = useRef<HTMLElement>(null);
-  const latestRequestRef = useRef(0);
   const vidUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -79,121 +77,9 @@ function AppContent() {
     };
   }, []);
 
-  const setTimecodes = (timecodes: Timecode[]) => {
-    const sanitized = timecodes.map((t) =>
-      'text' in t ? {...t, text: t.text.replace(/\\'/g, "'")} : t,
-    );
-    setTimecodeList(sanitized as Timecode[]);
-  };
-
   const onModeSelect = async (mode: string) => {
-    if (!file) {
-      setApiError('Please upload a video or audio file first.');
-      return;
-    }
-
-    const requestId = Date.now();
-    latestRequestRef.current = requestId;
-
-    setActiveMode(mode);
-    setIsLoading(true);
-    setTimecodeList(null);
-    setTextResponse(null);
-    setApiError(null);
-    setChartLabel(
-      isChartModeBool
-        ? isCustomChartModeBool
-          ? chartPrompt
-          : chartMode
-        : '',
-    );
-
-    try {
-      const promptConfig = modes[mode].prompt;
-      const prompt =
-        isCustomModeBool && typeof promptConfig === 'function'
-          ? promptConfig(customPrompt)
-          : isChartModeBool && typeof promptConfig === 'function'
-          ? promptConfig(
-              isCustomChartModeBool
-                ? chartPrompt
-                : modes[mode].subModes![chartMode],
-            )
-          : (promptConfig as string);
-
-      let resp: GenerateContentResponse | null = null;
-      const maxRetries = 3;
-      for (let i = 0; i < maxRetries; i++) {
-        if (latestRequestRef.current !== requestId) return;
-
-        // Pass user API key here
-        resp = await generateContent(prompt, file, user?.apiKey);
-
-        const hasFunctionCall = resp.functionCalls?.[0];
-        const hasText = resp.text;
-        const finishReason = resp.candidates?.[0]?.finishReason;
-        
-        if (finishReason === 'SAFETY' || finishReason === 'RECITATION') {
-          break;
-        }
-
-        if (hasFunctionCall || hasText) {
-          break;
-        }
-
-        if (i < maxRetries - 1) {
-          const delay = 1000 * 2 ** i + Math.random() * 1000;
-          await new Promise((resolve) => setTimeout(resolve, delay));
-        }
-      }
-
-      if (latestRequestRef.current !== requestId) return;
-
-      if (!resp) {
-        setApiError('No response received from the model.');
-        return;
-      }
-      
-      const safeResp = resp as GenerateContentResponse;
-      const call = safeResp.functionCalls?.[0];
-
-      if (call?.name && call.args) {
-        if (call.name.startsWith('set_timecodes')) {
-          setTimecodes(call.args.timecodes as Timecode[]);
-        }
-      } else if (safeResp.text) {
-        setTextResponse(safeResp.text);
-      } else {
-        const finishReason = safeResp.candidates?.[0]?.finishReason;
-        if (finishReason === 'SAFETY') {
-          setApiError(
-            'The model blocked the response due to safety concerns. Please try a different prompt or video.',
-          );
-        } else if (finishReason === 'RECITATION') {
-          setApiError('The model blocked the response due to recitation concerns.');
-        } else {
-          setApiError(
-            "The model didn't return a valid response after multiple attempts. Please try a different prompt.",
-          );
-        }
-      }
-    } catch (e) {
-      if (latestRequestRef.current === requestId) {
-        console.error(e);
-        setApiError(e instanceof Error ? e.message : 'An unknown error occurred.');
-      }
-    } finally {
-      if (latestRequestRef.current === requestId) {
-        setIsLoading(false);
-      }
-      scrollRef.current?.scrollTo({top: 0});
-    }
-  };
-
-  const handleCancel = () => {
-    latestRequestRef.current = Date.now();
-    setIsLoading(false);
-    setApiError(null);
+    await runAnalysis(mode);
+    scrollRef.current?.scrollTo({top: 0});
   };
 
   const handleFileUpload = async (fileToUpload: File | null | undefined) => {
@@ -225,12 +111,11 @@ function AppContent() {
     setVidUrl(newUrl);
 
     try {
-      // Pass user API key here
       const res = await uploadFile(
         fileToUpload,
         setUploadProgress,
         setUploadStatus,
-        user?.apiKey
+        userApiKey
       );
       setFile(res);
     } catch (e) {
@@ -256,6 +141,7 @@ function AppContent() {
       className={theme}
       onDrop={uploadMedia}
       onDragOver={(e) => e.preventDefault()}>
+      <ApiKeyModal />
       <div className="contentWrapper">
         <section className="top">
           {vidUrl && !isLoadingVideo && (
@@ -284,7 +170,7 @@ function AppContent() {
         </section>
 
         <OutputPanel
-          handleCancel={handleCancel}
+          handleCancel={cancelAnalysis}
           scrollRef={scrollRef}
           hasFile={!!vidUrl}
         />
